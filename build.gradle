@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.slf4j:slf4j-simple:1.7.26"
+    implementation "org.apache.kafka:kafka-streams:2.3.1"
+    testCompile "org.apache.kafka:kafka-streams-test-utils:2.3.1"
+    testCompile "junit:junit:4.12"
+}
