@@ -1,5 +1,6 @@
 package com.bakdata.demo;
 
+import com.bakdata.demo.serdes.ListSerde;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.*;
 import org.apache.kafka.streams.Topology;
@@ -15,12 +16,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import static org.junit.Assert.*;
 
 public class MovieRatingsToKVStoreProcessorTest {
-    private StoreBuilder<KeyValueStore<Integer, ByteBuffer>> storeSupplier;
+    private StoreBuilder<KeyValueStore<Integer, ArrayList<Integer>>> storeSupplier;
     private TopologyTestDriver testDriver;
     private StringDeserializer stringDeserializer = new StringDeserializer();
     private IntegerDeserializer intDeserializer = new IntegerDeserializer();
@@ -33,7 +34,7 @@ public class MovieRatingsToKVStoreProcessorTest {
         this.storeSupplier = Stores.keyValueStoreBuilder(
                 Stores.inMemoryKeyValueStore("ratingsForMovies"),
                 Serdes.Integer(),
-                Serdes.ByteBuffer()
+                new ListSerde(ArrayList.class, Serdes.Integer())
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
 
         builder.addSource("Source", "movieIds-with-ratings")
@@ -90,7 +91,7 @@ public class MovieRatingsToKVStoreProcessorTest {
         final MockProcessorContext context = new MockProcessorContext();
 
         // Create, initialize, and register the state store.
-        final KeyValueStore<Integer, ByteBuffer> store = this.storeSupplier.build();
+        final KeyValueStore<Integer, ArrayList<Integer>> store = this.storeSupplier.build();
         store.init(context, store);
         context.register(store, null);
 
@@ -104,12 +105,11 @@ public class MovieRatingsToKVStoreProcessorTest {
         assertTrue(context.committed());
 
         assertNotNull(store.get(3));
-        ByteBuffer processedValue = store.get(3);
+        ArrayList<Integer> processedValue = store.get(3);
 
         int[] ratings = new int[] {5, 4};
-        // += 4 because we're iterating over a byte[] and not an int[]
-        for (int i = 0; i < processedValue.capacity(); i += 4) {
-            assertEquals(processedValue.getInt(i), ratings[i/4]);
+        for (int i = 0; i < processedValue.size(); i++) {
+            assertEquals((int) processedValue.get(i), ratings[i]);
         }
     }
 }

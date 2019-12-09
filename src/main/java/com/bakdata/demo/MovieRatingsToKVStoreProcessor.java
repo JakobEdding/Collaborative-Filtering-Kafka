@@ -8,7 +8,6 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.state.KeyValueStore;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Properties;
 
@@ -34,13 +33,13 @@ public final class MovieRatingsToKVStoreProcessor {
         public Processor<Integer, String> get() {
             return new Processor<Integer, String>() {
                 private ProcessorContext context;
-                private KeyValueStore<Integer, ByteBuffer> kvStore;
+                private KeyValueStore<Integer, ArrayList<Integer>> kvStore;
 
                 @Override
                 @SuppressWarnings("unchecked")
                 public void init(final ProcessorContext context) {
                     this.context = context;
-                    this.kvStore = (KeyValueStore<Integer, ByteBuffer>) this.context.getStateStore("ratingsForMovies");
+                    this.kvStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore("ratingsForMovies");
                 }
 
                 @Override
@@ -51,12 +50,7 @@ public final class MovieRatingsToKVStoreProcessor {
                         ratings.add(Integer.parseInt(userIdRatingPair.split(",")[1]));
                     }
 
-                    ByteBuffer bb = ByteBuffer.allocate(4 * ratings.size());
-                    for (int rating : ratings) {
-                        bb.putInt(rating);
-                    }
-
-                    this.kvStore.put(movieId, bb);
+                    this.kvStore.put(movieId, ratings);
 
                     // phase 2: turn around ratings to have userId,movieId,rating triples for **user perspective**
                     for (String userIdRatingPair : ratingsForOneMovie.split(";")) {

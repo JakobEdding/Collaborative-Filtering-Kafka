@@ -8,7 +8,7 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.state.KeyValueStore;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Properties;
 
 public final class UserRatingsToKVStoreProcessor {
@@ -33,35 +33,28 @@ public final class UserRatingsToKVStoreProcessor {
         public Processor<Integer, String> get() {
             return new Processor<Integer, String>() {
                 private ProcessorContext context;
-                private KeyValueStore<Integer, ByteBuffer> kvStore;
+                private KeyValueStore<Integer, ArrayList<Integer>> kvStore;
 
                 @Override
                 @SuppressWarnings("unchecked")
                 public void init(final ProcessorContext context) {
                     this.context = context;
-                    this.kvStore = (KeyValueStore<Integer, ByteBuffer>) this.context.getStateStore("ratingsForUsers");
+                    this.kvStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore("ratingsForUsers");
                 }
 
                 @Override
                 public void process(final Integer userId, final String movieIdRatingPair) {
                     int rating = Integer.parseInt(movieIdRatingPair.split(",")[1]);
 
-                    ByteBuffer oldBb = this.kvStore.get(userId);
-                    int newBbSize = 4;
-                    if (oldBb != null) {
-                        newBbSize += oldBb.capacity();
-                    }
+                    ArrayList<Integer> allRatings = this.kvStore.get(userId);
 
-                    ByteBuffer newBb = ByteBuffer.allocate(newBbSize);
-                    if (oldBb != null) {
-                        for (int i = 0; i < oldBb.capacity(); i += 4) {
-                            newBb.putInt(oldBb.getInt(i));
-                        }
+                    if (allRatings == null) {
+                        allRatings = new ArrayList<>();
+                        allRatings.add(rating);
+                        this.kvStore.put(userId, allRatings);
+                    } else {
+                        allRatings.add(rating);
                     }
-                    newBb.putInt(rating);
-
-                    // TODO: partition store?
-                    this.kvStore.put(userId, newBb);
 
                     this.context.commit();
                 }
