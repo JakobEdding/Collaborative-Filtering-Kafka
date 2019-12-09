@@ -58,19 +58,32 @@ public class MovieRatingsToKVStoreProcessorTest {
 
     @Test
     public void testTopology() {
+        testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", "2", "2,2;3,1"));
         testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", "3", "1,5;2,4"));
 
         ProducerRecord<String, String> outputRecord1 = testDriver.readOutput(
                 "userId-movieId-rating-triple",
                 stringDeserializer,
                 stringDeserializer);
-        OutputVerifier.compareKeyValue(outputRecord1, "1", "3,5");
+        OutputVerifier.compareKeyValue(outputRecord1, "2", "2,2");
 
         ProducerRecord<String, String> outputRecord2 = testDriver.readOutput(
                 "userId-movieId-rating-triple",
                 stringDeserializer,
                 stringDeserializer);
-        OutputVerifier.compareKeyValue(outputRecord2, "2", "3,4");
+        OutputVerifier.compareKeyValue(outputRecord2, "3", "2,1");
+
+        ProducerRecord<String, String> outputRecord3 = testDriver.readOutput(
+                "userId-movieId-rating-triple",
+                stringDeserializer,
+                stringDeserializer);
+        OutputVerifier.compareKeyValue(outputRecord3, "1", "3,5");
+
+        ProducerRecord<String, String> outputRecord4 = testDriver.readOutput(
+                "userId-movieId-rating-triple",
+                stringDeserializer,
+                stringDeserializer);
+        OutputVerifier.compareKeyValue(outputRecord4, "2", "3,4");
 
         assertNull(testDriver.readOutput("userId-movieId-rating-triple", stringDeserializer, longDeserializer));
     }
