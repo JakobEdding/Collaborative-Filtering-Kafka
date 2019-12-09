@@ -1,10 +1,7 @@
 package com.bakdata.demo;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.LongDeserializer;
-import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.serialization.*;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.processor.MockProcessorContext;
@@ -26,8 +23,8 @@ public class MovieRatingsToKVStoreProcessorTest {
     private StoreBuilder<KeyValueStore<Integer, ByteBuffer>> storeSupplier;
     private TopologyTestDriver testDriver;
     private StringDeserializer stringDeserializer = new StringDeserializer();
-    private LongDeserializer longDeserializer = new LongDeserializer();
-    private ConsumerRecordFactory<String, String> recordFactory = new ConsumerRecordFactory<>(new StringSerializer(), new StringSerializer());
+    private IntegerDeserializer intDeserializer = new IntegerDeserializer();
+    private ConsumerRecordFactory<Integer, String> recordFactory = new ConsumerRecordFactory<>(new IntegerSerializer(), new StringSerializer());
 
     @Before
     public void setup() {
@@ -58,34 +55,34 @@ public class MovieRatingsToKVStoreProcessorTest {
 
     @Test
     public void testTopology() {
-        testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", "2", "2,2;3,1"));
-        testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", "3", "1,5;2,4"));
+        testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", 2, "2,2;3,1"));
+        testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", 3, "1,5;2,4"));
 
-        ProducerRecord<String, String> outputRecord1 = testDriver.readOutput(
+        ProducerRecord<Integer, String> outputRecord1 = testDriver.readOutput(
                 "userId-movieId-rating-triple",
-                stringDeserializer,
+                intDeserializer,
                 stringDeserializer);
-        OutputVerifier.compareKeyValue(outputRecord1, "2", "2,2");
+        OutputVerifier.compareKeyValue(outputRecord1, 2, "2,2");
 
-        ProducerRecord<String, String> outputRecord2 = testDriver.readOutput(
+        ProducerRecord<Integer, String> outputRecord2 = testDriver.readOutput(
                 "userId-movieId-rating-triple",
-                stringDeserializer,
+                intDeserializer,
                 stringDeserializer);
-        OutputVerifier.compareKeyValue(outputRecord2, "3", "2,1");
+        OutputVerifier.compareKeyValue(outputRecord2, 3, "2,1");
 
-        ProducerRecord<String, String> outputRecord3 = testDriver.readOutput(
+        ProducerRecord<Integer, String> outputRecord3 = testDriver.readOutput(
                 "userId-movieId-rating-triple",
-                stringDeserializer,
+                intDeserializer,
                 stringDeserializer);
-        OutputVerifier.compareKeyValue(outputRecord3, "1", "3,5");
+        OutputVerifier.compareKeyValue(outputRecord3, 1, "3,5");
 
-        ProducerRecord<String, String> outputRecord4 = testDriver.readOutput(
+        ProducerRecord<Integer, String> outputRecord4 = testDriver.readOutput(
                 "userId-movieId-rating-triple",
-                stringDeserializer,
+                intDeserializer,
                 stringDeserializer);
-        OutputVerifier.compareKeyValue(outputRecord4, "2", "3,4");
+        OutputVerifier.compareKeyValue(outputRecord4, 2, "3,4");
 
-        assertNull(testDriver.readOutput("userId-movieId-rating-triple", stringDeserializer, longDeserializer));
+        assertNull(testDriver.readOutput("userId-movieId-rating-triple", intDeserializer, stringDeserializer));
     }
 
     @Test
@@ -98,11 +95,11 @@ public class MovieRatingsToKVStoreProcessorTest {
         context.register(store, null);
 
         // Create and initialize the processor under test
-        final Processor<String, String> processor = new MovieRatingsToKVStoreProcessor.MyProcessorSupplier().get();
+        final Processor<Integer, String> processor = new MovieRatingsToKVStoreProcessor.MyProcessorSupplier().get();
         processor.init(context);
 
         // send a record to the processor
-        processor.process("3", "1,5;2,4");
+        processor.process(3, "1,5;2,4");
 
         assertTrue(context.committed());
 

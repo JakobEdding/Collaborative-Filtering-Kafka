@@ -18,7 +18,7 @@ public final class MovieRatingsToKVStoreProcessor {
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-wordcount");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.Integer().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
 
         // setting offset reset to earliest so that we can re-run the demo code with the same pre-loaded data
@@ -28,11 +28,11 @@ public final class MovieRatingsToKVStoreProcessor {
         return props;
     }
 
-    static class MyProcessorSupplier implements ProcessorSupplier<String, String> {
+    static class MyProcessorSupplier implements ProcessorSupplier<Integer, String> {
 
         @Override
-        public Processor<String, String> get() {
-            return new Processor<String, String>() {
+        public Processor<Integer, String> get() {
+            return new Processor<Integer, String>() {
                 private ProcessorContext context;
                 private KeyValueStore<Integer, ByteBuffer> kvStore;
 
@@ -44,7 +44,7 @@ public final class MovieRatingsToKVStoreProcessor {
                 }
 
                 @Override
-                public void process(final String movieId, final String ratingsForOneMovie) {
+                public void process(final Integer movieId, final String ratingsForOneMovie) {
                     // phase 1: write movieId rating vectors to store for **movie perspective**
                     ArrayList<Integer> ratings = new ArrayList<>();
                     for (String userIdRatingPair : ratingsForOneMovie.split(";")) {
@@ -56,12 +56,12 @@ public final class MovieRatingsToKVStoreProcessor {
                         bb.putInt(rating);
                     }
 
-                    this.kvStore.put(Integer.parseInt(movieId), bb);
+                    this.kvStore.put(movieId, bb);
 
                     // phase 2: turn around ratings to have userId,movieId,rating triples for **user perspective**
                     for (String userIdRatingPair : ratingsForOneMovie.split(";")) {
                         this.context.forward(
-                            userIdRatingPair.split(",")[0],
+                            Integer.parseInt(userIdRatingPair.split(",")[0]),
                             movieId + "," + userIdRatingPair.split(",")[1]
                         );
                     }
