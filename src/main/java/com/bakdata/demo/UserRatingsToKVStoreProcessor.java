@@ -51,11 +51,16 @@ public final class UserRatingsToKVStoreProcessor {
                     if (allRatings == null) {
                         allRatings = new ArrayList<>();
                         allRatings.add(rating);
-                        this.kvStore.put(userId, allRatings);
                     } else {
                         allRatings.add(rating);
                     }
 
+//                    System.out.println("all ratings start");
+//                    System.out.println("userId " + userId);
+//                    System.out.println("allratings for user " + allRatings.toString());
+//                    System.out.println("all ratings end");
+
+                    this.kvStore.put(userId, allRatings);
                     this.context.commit();
                 }
 
