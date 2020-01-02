@@ -27,7 +27,7 @@ public final class UserRatingsToKVStoreProcessor {
         return props;
     }
 
-    static class MyProcessorSupplier implements ProcessorSupplier<Integer, String> {
+    public static class MyProcessorSupplier implements ProcessorSupplier<Integer, String> {
 
         @Override
         public Processor<Integer, String> get() {
@@ -39,7 +39,7 @@ public final class UserRatingsToKVStoreProcessor {
                 @SuppressWarnings("unchecked")
                 public void init(final ProcessorContext context) {
                     this.context = context;
-                    this.kvStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore("ratingsForUsers");
+                    this.kvStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore("ratings-for-users");
                 }
 
                 @Override

@@ -27,7 +27,7 @@ public final class MovieRatingsToKVStoreProcessor {
         return props;
     }
 
-    static class MyProcessorSupplier implements ProcessorSupplier<Integer, String> {
+    public static class MyProcessorSupplier implements ProcessorSupplier<Integer, String> {
 
         @Override
         public Processor<Integer, String> get() {
@@ -39,11 +39,17 @@ public final class MovieRatingsToKVStoreProcessor {
                 @SuppressWarnings("unchecked")
                 public void init(final ProcessorContext context) {
                     this.context = context;
-                    this.kvStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore("ratingsForMovies");
+                    this.kvStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore("ratings-for-movies");
                 }
 
                 @Override
                 public void process(final Integer movieId, final String ratingsForOneMovie) {
+                    // TODO:
+                    if (ratingsForOneMovie.equals("EOF")) {
+                        this.context.commit();
+                        return;
+                    }
+
                     // phase 1: write movieId rating vectors to store for **movie perspective**
                     ArrayList<Integer> ratings = new ArrayList<>();
                     for (String userIdRatingPair : ratingsForOneMovie.split(";")) {

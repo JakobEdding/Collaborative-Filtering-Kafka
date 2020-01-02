@@ -23,16 +23,18 @@ public class WholeTopologyTest {
 
     @Before
     public void setup() {
+        // TODO: use getTopology()
+
         Topology builder = new Topology();
 
         StoreBuilder ratingsForMoviesStoreSupplier = Stores.keyValueStoreBuilder(
-                Stores.inMemoryKeyValueStore("ratingsForMovies"),
+                Stores.inMemoryKeyValueStore("ratings-for-movies"),
                 Serdes.Integer(),
                 new ListSerde(ArrayList.class, Serdes.Integer())
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
 
         StoreBuilder ratingsForUsersStoreSupplier = Stores.keyValueStoreBuilder(
-                Stores.inMemoryKeyValueStore("ratingsForUsers"),
+                Stores.inMemoryKeyValueStore("ratings-for-users"),
                 Serdes.Integer(),
                 new ListSerde(ArrayList.class, Serdes.Integer())
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
@@ -67,7 +69,7 @@ public class WholeTopologyTest {
         testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", 2, "2,2;3,1;1,2"));
         testDriver.pipeInput(recordFactory.create("movieIds-with-ratings", 3, "1,5;2,4"));
 
-        KeyValueStore<Integer, ArrayList<Integer>> store = testDriver.getKeyValueStore("ratingsForUsers");
+        KeyValueStore<Integer, ArrayList<Integer>> store = testDriver.getKeyValueStore("ratings-for-users");
 
         // Output in ratingsForUsers store
         // userId -> ratings

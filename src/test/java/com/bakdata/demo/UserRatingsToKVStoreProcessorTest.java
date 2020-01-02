@@ -33,7 +33,7 @@ public class UserRatingsToKVStoreProcessorTest {
         Topology builder = new Topology();
 
         this.storeSupplier = Stores.keyValueStoreBuilder(
-                Stores.inMemoryKeyValueStore("ratingsForUsers"),
+                Stores.inMemoryKeyValueStore("ratings-for-users"),
                 Serdes.Integer(),
                 new ListSerde(ArrayList.class, Serdes.Integer())
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.

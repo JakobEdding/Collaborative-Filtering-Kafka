@@ -7,6 +7,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -45,23 +46,23 @@ public class NetflixDataFormatProducer {
         BufferedReader dataFileReader = new BufferedReader(new FileReader(this.dataFilePath));
         String row;
         int currentMovieId = -1;
-        String userIdRatingPairs = "";
+        ArrayList<String> userIdRatingPairs = new ArrayList<>();
 
         while ((row = dataFileReader.readLine()) != null) {
             if (row.endsWith(":")) {
                 if (currentMovieId != -1) {
                     ProducerRecord<Integer, String> record = new ProducerRecord<>(
-                            this.topicName, currentMovieId, userIdRatingPairs);
-                    userIdRatingPairs = "";
+                            this.topicName, currentMovieId, String.join(";", userIdRatingPairs));
+                    userIdRatingPairs = new ArrayList<>();
                     this.sendAndLog(record);
                 }
                 currentMovieId = Integer.parseInt(row.split(":")[0]);
             } else {
-                userIdRatingPairs += row.substring(0, row.lastIndexOf(',')) + ";";
+                userIdRatingPairs.add(row.substring(0, row.lastIndexOf(',')));
             }
         }
 
-        ProducerRecord<Integer, String> record = new ProducerRecord<>(this.topicName, currentMovieId, userIdRatingPairs);
+        ProducerRecord<Integer, String> record = new ProducerRecord<>(this.topicName, currentMovieId, String.join(";", userIdRatingPairs));
         this.sendAndLog(record);
 
         dataFileReader.close();
