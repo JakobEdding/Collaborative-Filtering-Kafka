@@ -1,0 +1,79 @@
+version: '3.5'
+services:
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper
+    hostname: zookeeper-1
+    container_name: zookeeper-1
+    ports:
+      - "2181:2181"
+    env_file:
+      - env/zookeeper.env
+    healthcheck:
+      test: /bin/sh -c '[ \"imok\" = \"$$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]' || exit 1
+      interval: 1m
+    volumes:
+      - zookeeper-1-data:/var/lib/zookeeper/data/
+      - zookeeper-1-log:/var/lib/zookeeper/log/
+
+  kafka-1:
+    image: confluentinc/cp-enterprise-kafka:latest
+    hostname: kafka-1
+    container_name: kafka-1
+    stop_grace_period: 5m
+    depends_on:
+      - zookeeper-1
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    env_file:
+      - env/kafka.env
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data/
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:5.3.1
+    container_name: control-center
+    restart: always
+    depends_on:
+      - zookeeper-1
+      - kafka-1
+    ports:
+      - "9021:9021"
+      - "9022:9022"
+    volumes:
+      - ./scripts/security:/etc/kafka/secrets
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: "kafka-1:9092"
+      CONTROL_CENTER_ZOOKEEPER_CONNECT: "zookeeper-1:2181"
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_REPLICATION: 1
+      CONTROL_CENTER_COMMAND_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_METRICS_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_METRICS_TOPIC_PARTITIONS: 1
+      CONTROL_CENTER_STREAMS_NUM_STREAM_THREADS: 1
+      # Amount of heap to use for internal caches. Increase for better thoughput
+      CONTROL_CENTER_STREAMS_CACHE_MAX_BYTES_BUFFERING: 100000000
+      CONTROL_CENTER_CONNECT_CLUSTER: "https://connect:8083"
+      CONTROL_CENTER_KSQL_URL: "http://ksql-server:8088"
+      CONTROL_CENTER_KSQL_ADVERTISED_URL: "http://localhost:8088"
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "https://schemaregistry:8085"
+      CONTROL_CENTER_DEPRECATED_VIEWS_ENABLE: "true"
+      CONTROL_CENTER_STREAMS_CONSUMER_REQUEST_TIMEOUT_MS: "960032"
+      CONTROL_CENTER_STREAMS_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required \
+          username=\"client\" \
+          password=\"client-secret\";"
+      CONTROL_CENTER_STREAMS_SASL_MECHANISM: PLAIN
+      # HTTP and HTTPS to Control Center UI
+      CONTROL_CENTER_REST_LISTENERS: "http://0.0.0.0:9021"
+      CONTROL_CENTER_OPTS: -Djavax.net.ssl.trustStore=/etc/kafka/secrets/kafka.control-center.truststore.jks
+        -Djavax.net.ssl.trustStorePassword=confluent
+        -Djavax.net.ssl.keyStore=/etc/kafka/secrets/kafka.control-center.keystore.jks
+        -Djavax.net.ssl.keyStorePassword=confluent
+
+volumes:
+  zookeeper-1-data:
+  zookeeper-1-log:
+  kafka-1-data:
