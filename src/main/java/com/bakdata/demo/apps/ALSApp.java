@@ -12,10 +12,9 @@ import java.util.ArrayList;
 import java.util.Properties;
 
 public class ALSApp extends BaseKafkaApp {
+    public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String RATINGS_FOR_MOVIES_STORE = "ratings-for-movies";
     public final static String RATINGS_FOR_USERS_STORE = "ratings-for-users";
-
-    public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
 
     public ALSApp() {}
 

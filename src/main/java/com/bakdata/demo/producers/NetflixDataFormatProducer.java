@@ -12,6 +12,8 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import com.bakdata.demo.apps.ALSApp;
+
 public class NetflixDataFormatProducer {
     private Producer<Integer, String> producer;
     private String dataFilePath;
@@ -20,7 +22,7 @@ public class NetflixDataFormatProducer {
 
     public NetflixDataFormatProducer(String dataFilePath) {
         this.dataFilePath = dataFilePath;
-        this.topicName = "movieIds-with-ratings";
+        this.topicName = ALSApp.MOVIEIDS_WITH_RATINGS_TOPIC;
 
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
