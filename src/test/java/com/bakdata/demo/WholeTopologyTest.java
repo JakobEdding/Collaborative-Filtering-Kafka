@@ -40,12 +40,12 @@ public class WholeTopologyTest {
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
 
         builder.addSource("Source", "movieIds-with-ratings")
-                .addProcessor("MovieRatingsToKVStore", () -> new MovieRatingsToKVStoreProcessor.MyProcessorSupplier().get(), "Source")
-                .addStateStore(ratingsForMoviesStoreSupplier, "MovieRatingsToKVStore")
-                .addProcessor("UserRatingsToKVStoreProcess", () -> new UserRatingsToKVStoreProcessor.MyProcessorSupplier().get(), "MovieRatingsToKVStore")
-                .addStateStore(ratingsForUsersStoreSupplier, "UserRatingsToKVStoreProcess");
+                .addProcessor("MRatings2Blocks", () -> new MRatings2BlocksProcessor.MyProcessorSupplier().get(), "Source")
+                .addStateStore(ratingsForMoviesStoreSupplier, "MRatings2Blocks")
+                .addProcessor("URatings2Blocks", () -> new URatings2BlocksProcessor.MyProcessorSupplier().get(), "MRatings2Blocks")
+                .addStateStore(ratingsForUsersStoreSupplier, "URatings2Blocks");
 
-        testDriver = new TopologyTestDriver(builder, MovieRatingsToKVStoreProcessor.getStreamsConfig());
+        testDriver = new TopologyTestDriver(builder, MRatings2BlocksProcessor.getStreamsConfig());
     }
 
     @After

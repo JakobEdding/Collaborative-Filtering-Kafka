@@ -1,5 +1,6 @@
 package com.bakdata.demo.producers;
 
+import com.bakdata.demo.apps.ALSApp;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -11,8 +12,6 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-
-import com.bakdata.demo.apps.ALSApp;
 
 public class NetflixDataFormatProducer {
     private Producer<Integer, String> producer;
@@ -70,7 +69,7 @@ public class NetflixDataFormatProducer {
         dataFileReader.close();
 
         // send EOF to signal that producer is done
-        record = new ProducerRecord<>(this.topicName, -1, "EOF");
-        this.sendAndLog(record);
+//        record = new ProducerRecord<>(this.topicName, -1, "EOF");
+//        this.sendAndLog(record);
     }
 }

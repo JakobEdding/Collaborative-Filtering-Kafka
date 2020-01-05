@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.*;
 
-public class UserRatingsToKVStoreProcessorTest {
+public class URatings2BlocksProcessorTest {
     private StoreBuilder<KeyValueStore<Integer, ArrayList<Integer>>> storeSupplier;
     private TopologyTestDriver testDriver;
     private StringDeserializer stringDeserializer = new StringDeserializer();
@@ -39,11 +39,11 @@ public class UserRatingsToKVStoreProcessorTest {
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
 
         builder.addSource("NewSource", "userId-movieId-rating-triple")
-                .addProcessor("UserRatingsToKVStoreProcess", () -> new UserRatingsToKVStoreProcessor.MyProcessorSupplier().get(), "NewSource")
-                .addStateStore(storeSupplier, "UserRatingsToKVStoreProcess");
+                .addProcessor("URatings2Blocks", () -> new URatings2BlocksProcessor.MyProcessorSupplier().get(), "NewSource")
+                .addStateStore(storeSupplier, "URatings2Blocks");
 //                .addSink("Sink", "", "Process");
 
-        testDriver = new TopologyTestDriver(builder, MovieRatingsToKVStoreProcessor.getStreamsConfig());
+        testDriver = new TopologyTestDriver(builder, MRatings2BlocksProcessor.getStreamsConfig());
     }
 
     @After
@@ -65,7 +65,7 @@ public class UserRatingsToKVStoreProcessorTest {
         context.register(store, null);
 
         // Create and initialize the processor under test
-        final Processor<Integer, String> processor = new UserRatingsToKVStoreProcessor.MyProcessorSupplier().get();
+        final Processor<Integer, String> processor = new URatings2BlocksProcessor.MyProcessorSupplier().get();
         processor.init(context);
 
         // send a record to the processor
