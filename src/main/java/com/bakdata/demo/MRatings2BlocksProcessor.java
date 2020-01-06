@@ -52,10 +52,11 @@ public final class MRatings2BlocksProcessor {
 
                 @Override
                 public void process(final Integer movieId, final String ratingsForOneMovie) {
-//                    if (ratingsForOneMovie.equals("EOF")) {
-//                        this.context.commit();
-//                        return;
-//                    }
+                    if (ratingsForOneMovie.equals("EOF")) {
+                        this.context.forward(movieId, ratingsForOneMovie);
+                        this.context.commit();
+                        return;
+                    }
                     System.out.println(String.format("MRatings2BlocksProcessor - processing key: %d value: %s", movieId, ratingsForOneMovie));
 
                     ArrayList<Integer> userIds = new ArrayList<>();

@@ -28,6 +28,7 @@ public class NetflixDataFormatProducer {
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "netflix-data-producer-" + UUID.randomUUID().toString());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, PureModPartitioner.class.getName());
 
         this.producer = new KafkaProducer<>(props);
     }
@@ -69,7 +70,9 @@ public class NetflixDataFormatProducer {
         dataFileReader.close();
 
         // send EOF to signal that producer is done
-//        record = new ProducerRecord<>(this.topicName, -1, "EOF");
-//        this.sendAndLog(record);
+        for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
+            record = new ProducerRecord<>(this.topicName, partition, "EOF");
+            this.sendAndLog(record);
+        }
     }
 }

@@ -49,16 +49,20 @@ public final class URatings2BlocksProcessor {
 
                 @Override
                 public void process(final Integer userId, final String movieIdRatingPair) {
-//                    if (ratingsForOneMovie.equals("EOF")) {
-//                        this.context.commit();
-//                        return;
-//                    }
+                    if (movieIdRatingPair.equals("EOF")) {
+                        for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
+                            this.context.forward(partition, String.format("EOF-for-partition_%d", context.partition()));
+                        }
+                        this.context.commit();
+                        return;
+                    }
+
                     System.out.println(String.format("URatings2BlocksProcessor - processing key: %d value: %s", userId, movieIdRatingPair));
 
                     String[] split = movieIdRatingPair.split(",");
 
                     int movieId = Integer.parseInt(split[0]);
-                    short rating = Short.parseShort(split[1]));
+                    short rating = Short.parseShort(split[1]);
                     byte[] keyBytes = Serdes.Integer().serializer().serialize("doesntmatter", movieId);
                     Integer partitionInt = Utils.toPositive(Utils.murmur2(keyBytes)) % ALSApp.NUM_PARTITIONS;
                     short partition = partitionInt.shortValue();
@@ -79,16 +83,6 @@ public final class URatings2BlocksProcessor {
                     this.uInBlocksRatingsStore.put(userId, ratings);
                     this.uOutBlocksStore.put(userId, partitions);
 
-                    // TODO:
-                    for (String movieIdRatingPair : ratingsForOneMovie.split(";")) {
-                        // TODO: does this partition?
-                        this.context.forward(
-                                Integer.parseInt(movieIdRatingPair.split(",")[0]),
-                                movieId + "," + movieIdRatingPair.split(",")[1]
-                        );
-                    }
-
-                    // TODO: commit periodically rather than after every record for better performance?
                     this.context.commit();
                 }
 

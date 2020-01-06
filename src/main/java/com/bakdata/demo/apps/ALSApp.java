@@ -1,7 +1,9 @@
 package com.bakdata.demo.apps;
 
 import com.bakdata.demo.MRatings2BlocksProcessor;
+import com.bakdata.demo.UFeatureCalculator;
 import com.bakdata.demo.URatings2BlocksProcessor;
+import com.bakdata.demo.producers.PureModStreamPartitioner;
 import com.bakdata.demo.serdes.ListSerde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.Topology;
@@ -16,6 +18,7 @@ public class ALSApp extends BaseKafkaApp {
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieids-ratings";
+    public final static String EOF_TOPIC = "eof";
 
     public final static String M_INBLOCKS_UID_STORE = "m-inblocks-uid";
     public final static String M_INBLOCKS_RATINGS_STORE = "m-inblocks-ratings";
@@ -73,7 +76,7 @@ public class ALSApp extends BaseKafkaApp {
                 .addStateStore(mInBlocksRatingsStoreSupplier, "MRatings2Blocks")
                 .addStateStore(mOutBlocksStoreSupplier, "MRatings2Blocks")
                 // add sink/source combination here so that records are not kept inside same partition between processors
-                .addSink("userids-to-movieids-ratings-sink", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC)
+                .addSink("userids-to-movieids-ratings-sink", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "MRatings2Blocks")
 
                 .addSource("userids-to-movieids-ratings-source", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC)
                 .addProcessor(
@@ -83,7 +86,16 @@ public class ALSApp extends BaseKafkaApp {
                 )
                 .addStateStore(uInBlocksMidStoreSupplier, "URatings2Blocks")
                 .addStateStore(uInBlocksRatingsStoreSupplier, "URatings2Blocks")
-                .addStateStore(uOutBlocksStoreSupplier, "URatings2Blocks");
+                .addStateStore(uOutBlocksStoreSupplier, "URatings2Blocks")
+                .addSink("eof-sink", EOF_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "URatings2Blocks")
+
+                .addSource("eof-source", EOF_TOPIC)
+                .addProcessor(
+                        "UFeatureCalculator",
+                        () -> new UFeatureCalculator.MyProcessorSupplier().get(),
+                        "eof-source"
+                )
+                ;
     }
 
     @Override
