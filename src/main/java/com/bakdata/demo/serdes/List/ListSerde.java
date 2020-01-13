@@ -1,4 +1,4 @@
-package com.bakdata.demo.serdes;
+package com.bakdata.demo.serdes.List;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;

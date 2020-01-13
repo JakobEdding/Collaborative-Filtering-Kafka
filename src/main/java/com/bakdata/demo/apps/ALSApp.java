@@ -1,10 +1,13 @@
 package com.bakdata.demo.apps;
 
-import com.bakdata.demo.MRatings2BlocksProcessor;
-import com.bakdata.demo.UFeatureCalculator;
-import com.bakdata.demo.URatings2BlocksProcessor;
+import com.bakdata.demo.processors.MFeatureCalculator;
+import com.bakdata.demo.processors.MRatings2BlocksProcessor;
+import com.bakdata.demo.processors.UFeatureInitializer;
+import com.bakdata.demo.processors.URatings2BlocksProcessor;
 import com.bakdata.demo.producers.PureModStreamPartitioner;
-import com.bakdata.demo.serdes.ListSerde;
+import com.bakdata.demo.serdes.FeatureMessage.FeatureMessageDeserializer;
+import com.bakdata.demo.serdes.FeatureMessage.FeatureMessageSerializer;
+import com.bakdata.demo.serdes.List.ListSerde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.state.StoreBuilder;
@@ -15,10 +18,16 @@ import java.util.Properties;
 
 public class ALSApp extends BaseKafkaApp {
     public final static int NUM_PARTITIONS = 4;
+    public final static int NUM_FEATURES = 5;
+    // TODO: what actual init "small" values are used in Spark MLLib?
+    public final static int MIN_RATING = 1;
+    public final static int MAX_RATING = 5;
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
-    public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieids-ratings";
+    public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieIds-ratings";
     public final static String EOF_TOPIC = "eof";
+    public final static String USER_FEATURES_TOPIC = "user-features";
+    public final static String MOVIE_FEATURES_TOPIC = "movie-features";
 
     public final static String M_INBLOCKS_UID_STORE = "m-inblocks-uid";
     public final static String M_INBLOCKS_RATINGS_STORE = "m-inblocks-ratings";
@@ -91,10 +100,48 @@ public class ALSApp extends BaseKafkaApp {
 
                 .addSource("eof-source", EOF_TOPIC)
                 .addProcessor(
-                        "UFeatureCalculator",
-                        () -> new UFeatureCalculator.MyProcessorSupplier().get(),
+                        "UFeatureInitializer",
+                        () -> new UFeatureInitializer.MyProcessorSupplier().get(),
                         "eof-source"
                 )
+                .connectProcessorAndStateStores("UFeatureInitializer", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
+                .addSink(
+                        "user-features-sink",
+                        USER_FEATURES_TOPIC,
+                        Serdes.Integer().serializer(),
+                        new FeatureMessageSerializer(),
+                        new PureModStreamPartitioner<Integer, Object>(),
+                        "UFeatureInitializer"
+                )
+//                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureInitializer", "UFeatureCalculator")
+
+                .addSource(
+                        "user-features-source",
+                        Serdes.Integer().deserializer(),
+                        new FeatureMessageDeserializer(),
+                        USER_FEATURES_TOPIC
+                )
+                .addProcessor(
+                        "MFeatureCalculator",
+                        () -> new MFeatureCalculator.MyProcessorSupplier().get(),
+                        "user-features-source"
+                )
+                .addSink(
+                        "movie-features-sink",
+                        MOVIE_FEATURES_TOPIC,
+                        Serdes.Integer().serializer(),
+                        new FeatureMessageSerializer(),
+                        new PureModStreamPartitioner<Integer, Object>(),
+                        "MFeatureCalculator"
+                )
+                
+//                .addSource("movie-features-source", MOVIE_FEATURES_TOPIC)
+//                .addProcessor(
+//                        "UFeatureCalculator",
+//                        () -> new UFeatureCalculator.MyProcessorSupplier().get(),
+//                        "movie-features-source"
+//                )
+////                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureCalculator")
                 ;
     }
 

@@ -1,6 +1,8 @@
 package com.bakdata.demo;
 
-import com.bakdata.demo.serdes.ListSerde;
+import com.bakdata.demo.processors.MRatings2BlocksProcessor;
+import com.bakdata.demo.processors.URatings2BlocksProcessor;
+import com.bakdata.demo.serdes.List.ListSerde;
 import org.apache.kafka.common.serialization.*;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;

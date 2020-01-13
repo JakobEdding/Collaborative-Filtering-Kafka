@@ -1,16 +1,17 @@
-package com.bakdata.demo;
+package com.bakdata.demo.processors;
 
 import com.bakdata.demo.apps.ALSApp;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.processor.Processor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.state.KeyValueStore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Properties;
 
 public final class URatings2BlocksProcessor {
     static Properties getStreamsConfig() {
@@ -63,8 +64,7 @@ public final class URatings2BlocksProcessor {
 
                     int movieId = Integer.parseInt(split[0]);
                     short rating = Short.parseShort(split[1]);
-                    byte[] keyBytes = Serdes.Integer().serializer().serialize("doesntmatter", movieId);
-                    Integer partitionInt = Utils.toPositive(Utils.murmur2(keyBytes)) % ALSApp.NUM_PARTITIONS;
+                    Integer partitionInt = movieId % ALSApp.NUM_PARTITIONS;
                     short partition = partitionInt.shortValue();
 
                     ArrayList<Integer> movieIds = this.uInBlocksMidStore.get(userId);

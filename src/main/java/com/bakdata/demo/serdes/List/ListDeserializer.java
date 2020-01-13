@@ -1,4 +1,4 @@
-package com.bakdata.demo.serdes;
+package com.bakdata.demo.serdes.List;
 
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.*;

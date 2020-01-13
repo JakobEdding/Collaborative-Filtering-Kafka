@@ -1,6 +1,8 @@
 package com.bakdata.demo;
 
-import com.bakdata.demo.serdes.ListSerde;
+import com.bakdata.demo.processors.MRatings2BlocksProcessor;
+import com.bakdata.demo.processors.URatings2BlocksProcessor;
+import com.bakdata.demo.serdes.List.ListSerde;
 import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringDeserializer;

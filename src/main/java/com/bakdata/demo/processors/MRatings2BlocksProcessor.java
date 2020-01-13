@@ -1,9 +1,8 @@
-package com.bakdata.demo;
+package com.bakdata.demo.processors;
 
 import com.bakdata.demo.apps.ALSApp;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.processor.Processor;
 import org.apache.kafka.streams.processor.ProcessorContext;
@@ -67,8 +66,7 @@ public final class MRatings2BlocksProcessor {
                         int userId = Integer.parseInt(split[0]);
                         userIds.add(userId);
                         ratings.add(Short.parseShort(split[1]));
-                        byte[] keyBytes = Serdes.Integer().serializer().serialize("doesntmatter", userId);
-                        Integer partitionInt = Utils.toPositive(Utils.murmur2(keyBytes)) % ALSApp.NUM_PARTITIONS;
+                        Integer partitionInt = userId % ALSApp.NUM_PARTITIONS;
                         partitions.add(partitionInt.shortValue());
                     }
 
