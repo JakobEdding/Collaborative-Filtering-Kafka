@@ -12,7 +12,7 @@ docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movieIds-wit
 docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic userIds-to-movieIds-ratings --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
 docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic eof --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
 docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic user-features --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
-docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movie-feaatures --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
+docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movie-features --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
 
 echo "topics after: `docker-compose exec kafka-1 ./usr/bin/kafka-topics --list --zookeeper zookeeper-1`"
 
