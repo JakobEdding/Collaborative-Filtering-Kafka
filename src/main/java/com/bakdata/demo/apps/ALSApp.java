@@ -76,11 +76,7 @@ public class ALSApp extends BaseKafkaApp {
         return new Topology()
                 // TODO: implement new architecture as devised in architecture slides for last meeting
                 .addSource("movieids-with-ratings-source", MOVIEIDS_WITH_RATINGS_TOPIC)
-                .addProcessor(
-                        "MRatings2Blocks",
-                        () -> new MRatings2BlocksProcessor.MyProcessorSupplier().get(),
-                        "movieids-with-ratings-source"
-                )
+                .addProcessor("MRatings2Blocks", MRatings2BlocksProcessor::new, "movieids-with-ratings-source")
                 .addStateStore(mInBlocksUidStoreSupplier, "MRatings2Blocks")
                 .addStateStore(mInBlocksRatingsStoreSupplier, "MRatings2Blocks")
                 .addStateStore(mOutBlocksStoreSupplier, "MRatings2Blocks")
@@ -88,22 +84,14 @@ public class ALSApp extends BaseKafkaApp {
                 .addSink("userids-to-movieids-ratings-sink", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "MRatings2Blocks")
 
                 .addSource("userids-to-movieids-ratings-source", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC)
-                .addProcessor(
-                        "URatings2Blocks",
-                        () -> new URatings2BlocksProcessor.MyProcessorSupplier().get(),
-                        "userids-to-movieids-ratings-source"
-                )
+                .addProcessor("URatings2Blocks", URatings2BlocksProcessor::new, "userids-to-movieids-ratings-source")
                 .addStateStore(uInBlocksMidStoreSupplier, "URatings2Blocks")
                 .addStateStore(uInBlocksRatingsStoreSupplier, "URatings2Blocks")
                 .addStateStore(uOutBlocksStoreSupplier, "URatings2Blocks")
                 .addSink("eof-sink", EOF_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "URatings2Blocks")
 
                 .addSource("eof-source", EOF_TOPIC)
-                .addProcessor(
-                        "UFeatureInitializer",
-                        () -> new UFeatureInitializer.MyProcessorSupplier().get(),
-                        "eof-source"
-                )
+                .addProcessor("UFeatureInitializer", UFeatureInitializer::new, "eof-source")
                 .connectProcessorAndStateStores("UFeatureInitializer", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
                 .addSink(
                         "user-features-sink",
@@ -121,11 +109,7 @@ public class ALSApp extends BaseKafkaApp {
                         new FeatureMessageDeserializer(),
                         USER_FEATURES_TOPIC
                 )
-                .addProcessor(
-                        "MFeatureCalculator",
-                        () -> new MFeatureCalculator.MyProcessorSupplier().get(),
-                        "user-features-source"
-                )
+                .addProcessor("MFeatureCalculator", MFeatureCalculator::new, "user-features-source")
                 .addSink(
                         "movie-features-sink",
                         MOVIE_FEATURES_TOPIC,
@@ -136,11 +120,7 @@ public class ALSApp extends BaseKafkaApp {
                 )
                 
 //                .addSource("movie-features-source", MOVIE_FEATURES_TOPIC)
-//                .addProcessor(
-//                        "UFeatureCalculator",
-//                        () -> new UFeatureCalculator.MyProcessorSupplier().get(),
-//                        "movie-features-source"
-//                )
+//                .addProcessor("UFeatureCalculator", UFeatureCalculator::new, "movie-features-source")
 ////                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureCalculator")
                 ;
     }
