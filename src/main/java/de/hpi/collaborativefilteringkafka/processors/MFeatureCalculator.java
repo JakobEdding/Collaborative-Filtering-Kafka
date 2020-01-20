@@ -32,7 +32,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
-        System.out.println(String.format("Received in MFeatureCalc on partition %d this message: %s", partition, msg.toString()));
+        System.out.println(String.format("Received: MFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
 
         int userIdForFeatures = msg.id;
         ArrayList<Integer> movieIds = msg.dependentIds;
@@ -42,6 +42,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             ArrayList<Integer> inBlockUidsForM = this.mInBlocksUidStore.get(movieId);
             if (inBlockUidsForM == null) {
                 // wrong partition for movie
+                System.out.println(String.format("Received: MFeatureCalculator - partition %d - this movie is not on this partition: %d", partition, movieId));
                 continue;
             }
 

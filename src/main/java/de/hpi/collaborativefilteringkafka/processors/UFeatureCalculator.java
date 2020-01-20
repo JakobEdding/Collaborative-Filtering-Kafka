@@ -32,7 +32,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
-        System.out.println(String.format("Received in UFeatureCalc on partition %d this message: %s", partition, msg.toString()));
+        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
 
         int movieIdForFeatures = msg.id;
         ArrayList<Integer> userIds = msg.dependentIds;
@@ -42,6 +42,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
             if (inBlockMidsForU == null) {
                 // wrong partition for user
+                System.out.println(String.format("Received: UFeatureCalculator - partition %d - this user is not on this partition: %d", partition, userId));
                 continue;
             }
 

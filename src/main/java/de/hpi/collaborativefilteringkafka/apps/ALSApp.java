@@ -20,7 +20,7 @@ public class ALSApp extends BaseKafkaApp {
     public final static int MIN_RATING = 1;
     public final static int MAX_RATING = 5;
     public final static float ALS_LAMBDA = 0.05f;
-    public final static int NUM_ALS_ITERATIONS = 3;
+    public final static int NUM_ALS_ITERATIONS = 7;
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieIds-ratings";
