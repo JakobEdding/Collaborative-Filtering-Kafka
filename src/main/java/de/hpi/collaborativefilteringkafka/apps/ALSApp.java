@@ -116,14 +116,21 @@ public class ALSApp extends BaseKafkaApp {
                         "MFeatureCalculator"
                 )
                 .connectProcessorAndStateStores("MFeatureCalculator", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE)
-                
                 .addSource(
                         "movie-features-source",
                         Serdes.Integer().deserializer(),
                         new FeatureMessageDeserializer(),
                         MOVIE_FEATURES_TOPIC)
                 .addProcessor("UFeatureCalculator", UFeatureCalculator::new, "movie-features-source")
-//                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureCalculator")
+                .addSink(
+                        "user-features-sink-2",
+                        USER_FEATURES_TOPIC,
+                        Serdes.Integer().serializer(),
+                        new FeatureMessageSerializer(),
+                        new PureModStreamPartitioner<Integer, Object>(),
+                        "UFeatureCalculator"
+                )
+                .connectProcessorAndStateStores("UFeatureCalculator", U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
                 ;
     }
 
