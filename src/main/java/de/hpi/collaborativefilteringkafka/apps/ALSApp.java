@@ -20,6 +20,7 @@ public class ALSApp extends BaseKafkaApp {
     public final static int MIN_RATING = 1;
     public final static int MAX_RATING = 5;
     public final static float ALS_LAMBDA = 0.05f;
+    public final static int NUM_ALS_ITERATIONS = 10;
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieIds-ratings";
@@ -72,7 +73,6 @@ public class ALSApp extends BaseKafkaApp {
         ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
 
         return new Topology()
-                // TODO: implement new architecture as devised in architecture slides for last meeting
                 .addSource("movieids-with-ratings-source", MOVIEIDS_WITH_RATINGS_TOPIC)
                 .addProcessor("MRatings2Blocks", MRatings2BlocksProcessor::new, "movieids-with-ratings-source")
                 .addStateStore(mInBlocksUidStoreSupplier, "MRatings2Blocks")
@@ -133,6 +133,110 @@ public class ALSApp extends BaseKafkaApp {
                 .connectProcessorAndStateStores("UFeatureCalculator", U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
                 ;
     }
+
+//    @Override
+//    public Topology getTopology(Properties properties) {
+//        StoreBuilder mInBlocksUidStoreSupplier = Stores.keyValueStoreBuilder(
+//                Stores.inMemoryKeyValueStore(M_INBLOCKS_UID_STORE),
+//                Serdes.Integer(),
+//                new ListSerde(ArrayList.class, Serdes.Integer())
+//        ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
+//        StoreBuilder mInBlocksRatingsStoreSupplier = Stores.keyValueStoreBuilder(
+//                Stores.inMemoryKeyValueStore(M_INBLOCKS_RATINGS_STORE),
+//                Serdes.Integer(),
+//                new ListSerde(ArrayList.class, Serdes.Short())
+//        ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
+//        StoreBuilder mOutBlocksStoreSupplier = Stores.keyValueStoreBuilder(
+//                Stores.inMemoryKeyValueStore(M_OUTBLOCKS_STORE),
+//                Serdes.Integer(),
+//                new ListSerde(ArrayList.class, Serdes.Short())
+//        ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
+//
+//        StoreBuilder uInBlocksMidStoreSupplier = Stores.keyValueStoreBuilder(
+//                Stores.inMemoryKeyValueStore(U_INBLOCKS_MID_STORE),
+//                Serdes.Integer(),
+//                new ListSerde(ArrayList.class, Serdes.Integer())
+//        ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
+//        StoreBuilder uInBlocksRatingsStoreSupplier = Stores.keyValueStoreBuilder(
+//                Stores.inMemoryKeyValueStore(U_INBLOCKS_RATINGS_STORE),
+//                Serdes.Integer(),
+//                new ListSerde(ArrayList.class, Serdes.Short())
+//        ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
+//        StoreBuilder uOutBlocksStoreSupplier = Stores.keyValueStoreBuilder(
+//                Stores.inMemoryKeyValueStore(U_OUTBLOCKS_STORE),
+//                Serdes.Integer(),
+//                new ListSerde(ArrayList.class, Serdes.Short())
+//        ).withLoggingDisabled();  // Changelog is not supported by MockProcessorContext.
+//
+//        Topology topology = new Topology()
+//                .addSource("movieids-with-ratings-source", MOVIEIDS_WITH_RATINGS_TOPIC)
+//                .addProcessor("MRatings2Blocks", MRatings2BlocksProcessor::new, "movieids-with-ratings-source")
+//                .addStateStore(mInBlocksUidStoreSupplier, "MRatings2Blocks")
+//                .addStateStore(mInBlocksRatingsStoreSupplier, "MRatings2Blocks")
+//                .addStateStore(mOutBlocksStoreSupplier, "MRatings2Blocks")
+//                // add sink/source combination here so that records are not kept inside same partition between processors
+//                .addSink("userids-to-movieids-ratings-sink", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "MRatings2Blocks")
+//
+//                .addSource("userids-to-movieids-ratings-source", USERIDS_TO_MOVIEIDS_RATINGS_TOPIC)
+//                .addProcessor("URatings2Blocks", URatings2BlocksProcessor::new, "userids-to-movieids-ratings-source")
+//                .addStateStore(uInBlocksMidStoreSupplier, "URatings2Blocks")
+//                .addStateStore(uInBlocksRatingsStoreSupplier, "URatings2Blocks")
+//                .addStateStore(uOutBlocksStoreSupplier, "URatings2Blocks")
+//                .addSink("eof-sink", EOF_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "URatings2Blocks")
+//
+//                .addSource("eof-source", EOF_TOPIC)
+//                .addProcessor("UFeatureInitializer", UFeatureInitializer::new, "eof-source")
+//                .connectProcessorAndStateStores("UFeatureInitializer", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
+//                .addSink(
+//                        "user-features-sink",
+//                        USER_FEATURES_TOPIC,
+//                        Serdes.Integer().serializer(),
+//                        new FeatureMessageSerializer(),
+//                        new PureModStreamPartitioner<Integer, Object>(),
+//                        "UFeatureInitializer"
+//                )
+//
+//                .addSource(
+//                        "user-features-source",
+//                        Serdes.Integer().deserializer(),
+//                        new FeatureMessageDeserializer(),
+//                        USER_FEATURES_TOPIC
+//                )
+//                .addSource(
+//                        "movie-features-source",
+//                        Serdes.Integer().deserializer(),
+//                        new FeatureMessageDeserializer(),
+//                        MOVIE_FEATURES_TOPIC
+//                )
+//                ;
+//
+//        for (int i = 0; i < NUM_ALS_ITERATIONS; i++) {
+//            topology
+//            .addProcessor("MFeatureCalculator-" + i, MFeatureCalculator::new, "user-features-source")
+//            .addSink(
+//                    "movie-features-sink-" + i,
+//                    MOVIE_FEATURES_TOPIC,
+//                    Serdes.Integer().serializer(),
+//                    new FeatureMessageSerializer(),
+//                    new PureModStreamPartitioner<Integer, Object>(),
+//                    "MFeatureCalculator-" + i
+//            )
+//            .connectProcessorAndStateStores("MFeatureCalculator-" + i, M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE)
+//            .addProcessor("UFeatureCalculator-" + i, UFeatureCalculator::new, "movie-features-source")
+//            .addSink(
+//                    "user-features-sink-" + i,
+//                    USER_FEATURES_TOPIC,
+//                    Serdes.Integer().serializer(),
+//                    new FeatureMessageSerializer(),
+//                    new PureModStreamPartitioner<Integer, Object>(),
+//                    "UFeatureCalculator-" + i
+//            )
+//            .connectProcessorAndStateStores("UFeatureCalculator-" + i, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
+//            ;
+//        }
+//
+//        return topology;
+//    }
 
     @Override
     public String APPLICATION_ID_CONFIG() {
