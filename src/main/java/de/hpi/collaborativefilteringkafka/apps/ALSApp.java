@@ -1,9 +1,6 @@
 package de.hpi.collaborativefilteringkafka.apps;
 
-import de.hpi.collaborativefilteringkafka.processors.MFeatureCalculator;
-import de.hpi.collaborativefilteringkafka.processors.MRatings2BlocksProcessor;
-import de.hpi.collaborativefilteringkafka.processors.UFeatureInitializer;
-import de.hpi.collaborativefilteringkafka.processors.URatings2BlocksProcessor;
+import de.hpi.collaborativefilteringkafka.processors.*;
 import de.hpi.collaborativefilteringkafka.producers.PureModStreamPartitioner;
 import de.hpi.collaborativefilteringkafka.serdes.FeatureMessage.FeatureMessageDeserializer;
 import de.hpi.collaborativefilteringkafka.serdes.FeatureMessage.FeatureMessageSerializer;
@@ -22,6 +19,7 @@ public class ALSApp extends BaseKafkaApp {
     // TODO: what actual init "small" values are used in Spark MLLib?
     public final static int MIN_RATING = 1;
     public final static int MAX_RATING = 5;
+    public final static float ALS_LAMBDA = 0.05f;
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieIds-ratings";
@@ -101,7 +99,6 @@ public class ALSApp extends BaseKafkaApp {
                         new PureModStreamPartitioner<Integer, Object>(),
                         "UFeatureInitializer"
                 )
-//                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureInitializer", "UFeatureCalculator")
 
                 .addSource(
                         "user-features-source",
@@ -118,10 +115,15 @@ public class ALSApp extends BaseKafkaApp {
                         new PureModStreamPartitioner<Integer, Object>(),
                         "MFeatureCalculator"
                 )
+                .connectProcessorAndStateStores("MFeatureCalculator", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE)
                 
-//                .addSource("movie-features-source", MOVIE_FEATURES_TOPIC)
-//                .addProcessor("UFeatureCalculator", UFeatureCalculator::new, "movie-features-source")
-////                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureCalculator")
+                .addSource(
+                        "movie-features-source",
+                        Serdes.Integer().deserializer(),
+                        new FeatureMessageDeserializer(),
+                        MOVIE_FEATURES_TOPIC)
+                .addProcessor("UFeatureCalculator", UFeatureCalculator::new, "movie-features-source")
+//                .addSink("user-features-sink", USER_FEATURES_TOPIC, new PureModStreamPartitioner<Integer, Object>(), "UFeatureCalculator")
                 ;
     }
 
