@@ -32,6 +32,8 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
+        System.out.println(String.format("Received in MFeatureCalc on partition %d this message: %s", partition, msg.toString()));
+
         int userIdForFeatures = msg.id;
         ArrayList<Integer> movieIds = msg.dependentIds;
         ArrayList<Float> features = msg.features;
