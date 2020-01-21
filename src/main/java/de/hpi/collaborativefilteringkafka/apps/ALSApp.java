@@ -199,39 +199,39 @@ public class ALSApp extends BaseKafkaApp {
 
         for (int i = 0; i < NUM_ALS_ITERATIONS; i++) {
             topology
-            .addSource(
-                    "user-features-source-" + i,
-                    Serdes.Integer().deserializer(),
-                    new FeatureMessageDeserializer(),
-                    USER_FEATURES_TOPIC + "-" + i
-            )
-            .addProcessor("MFeatureCalculator-" + i, MFeatureCalculator::new, "user-features-source-" + i)
-            .addSink(
-                    "movie-features-sink-" + i,
-                    MOVIE_FEATURES_TOPIC + "-" + i,
-                    Serdes.Integer().serializer(),
-                    new FeatureMessageSerializer(),
-                    new PureModStreamPartitioner<Integer, Object>(),
-                    "MFeatureCalculator-" + i
-            )
-            .connectProcessorAndStateStores("MFeatureCalculator-" + i, M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE)
-            .addSource(
-                    "movie-features-source-" + i,
-                    Serdes.Integer().deserializer(),
-                    new FeatureMessageDeserializer(),
-                    MOVIE_FEATURES_TOPIC + "-" + i
-            )
-            .addProcessor("UFeatureCalculator-" + i, UFeatureCalculator::new, "movie-features-source-" + i)
-            .addSink(
-                    "user-features-sink-" + (i + 1),
-                    USER_FEATURES_TOPIC + "-" + (i + 1),
-                    Serdes.Integer().serializer(),
-                    new FeatureMessageSerializer(),
-                    new PureModStreamPartitioner<Integer, Object>(),
-                    "UFeatureCalculator-" + i
-            )
-            .connectProcessorAndStateStores("UFeatureCalculator-" + i, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
-            ;
+                .addSource(
+                        "user-features-source-" + i,
+                        Serdes.Integer().deserializer(),
+                        new FeatureMessageDeserializer(),
+                        USER_FEATURES_TOPIC + "-" + i
+                )
+                .addProcessor("MFeatureCalculator-" + i, MFeatureCalculator::new, "user-features-source-" + i)
+                .addSink(
+                        "movie-features-sink-" + i,
+                        MOVIE_FEATURES_TOPIC + "-" + i,
+                        Serdes.Integer().serializer(),
+                        new FeatureMessageSerializer(),
+                        new PureModStreamPartitioner<Integer, Object>(),
+                        "MFeatureCalculator-" + i
+                )
+                .connectProcessorAndStateStores("MFeatureCalculator-" + i, M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE)
+                .addSource(
+                        "movie-features-source-" + i,
+                        Serdes.Integer().deserializer(),
+                        new FeatureMessageDeserializer(),
+                        MOVIE_FEATURES_TOPIC + "-" + i
+                )
+                .addProcessor("UFeatureCalculator-" + i, UFeatureCalculator::new, "movie-features-source-" + i)
+                .addSink(
+                        "user-features-sink-" + (i + 1),
+                        USER_FEATURES_TOPIC + "-" + (i + 1),
+                        Serdes.Integer().serializer(),
+                        new FeatureMessageSerializer(),
+                        new PureModStreamPartitioner<Integer, Object>(),
+                        "UFeatureCalculator-" + i
+                )
+                .connectProcessorAndStateStores("UFeatureCalculator-" + i, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
+                ;
         }
 
         return topology;
