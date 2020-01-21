@@ -4,6 +4,7 @@ import de.hpi.collaborativefilteringkafka.apps.ALSApp;
 import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.processor.To;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
@@ -42,7 +43,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
             if (inBlockMidsForU == null) {
                 // wrong partition for user
-                System.out.println(String.format("Received: UFeatureCalculator - partition %d - this user is not on this partition: %d", partition, userId));
+//                System.out.println(String.format("Received: UFeatureCalculator - partition %d - this user is not on this partition: %d", partition, userId));
                 continue;
             }
 
@@ -96,8 +97,33 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     uFeaturesVectorFloat.add(uFeaturesVector.get(l, 0));
                 }
 
-                for (int targetPartition : this.uOutBlocksStore.get(userId)) {
-                    context.forward(targetPartition, new FeatureMessage(userId, this.uInBlocksMidStore.get(userId), uFeaturesVectorFloat));
+                String sourceTopic = this.context.topic();
+                int sourceTopicIteration = Integer.parseInt(sourceTopic.substring(sourceTopic.length() - 1));
+                int sinkTopicIteration = sourceTopicIteration + 1;
+
+                FeatureMessage featureMsgToBeSent = new FeatureMessage(
+                        userId,
+                        this.uInBlocksMidStore.get(userId),
+                        uFeaturesVectorFloat
+                );
+
+                if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
+                    System.out.println(String.format("finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+                    context.forward(
+                            0,
+                            featureMsgToBeSent,
+                            To.child("user-features-sink-" + sinkTopicIteration)
+                    );
+                } else {
+                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+                    for (int targetPartition : this.uOutBlocksStore.get(userId)) {
+                        // TODO: don't hardcode sink name
+                        context.forward(
+                                targetPartition,
+                                featureMsgToBeSent,
+                                To.child("user-features-sink-" + sinkTopicIteration)
+                        );
+                    }
                 }
             }
         }

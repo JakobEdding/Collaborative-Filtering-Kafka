@@ -231,8 +231,19 @@ public class ALSApp extends BaseKafkaApp {
                         "UFeatureCalculator-" + i
                 )
                 .connectProcessorAndStateStores("UFeatureCalculator-" + i, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
-                ;
+            ;
         }
+
+        topology
+            .addSink(
+                    "movie-features-sink-" + NUM_ALS_ITERATIONS,
+                    MOVIE_FEATURES_TOPIC + "-" + NUM_ALS_ITERATIONS,
+                    Serdes.Integer().serializer(),
+                    new FeatureMessageSerializer(),
+                    new PureModStreamPartitioner<Integer, Object>(),
+                    "MFeatureCalculator-" + (NUM_ALS_ITERATIONS - 1)
+            )
+        ;
 
         return topology;
     }

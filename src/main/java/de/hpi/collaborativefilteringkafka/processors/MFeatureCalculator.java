@@ -4,6 +4,7 @@ import de.hpi.collaborativefilteringkafka.apps.ALSApp;
 import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.processor.To;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
@@ -42,7 +43,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             ArrayList<Integer> inBlockUidsForM = this.mInBlocksUidStore.get(movieId);
             if (inBlockUidsForM == null) {
                 // wrong partition for movie
-                System.out.println(String.format("Received: MFeatureCalculator - partition %d - this movie is not on this partition: %d", partition, movieId));
+//                System.out.println(String.format("Received: MFeatureCalculator - partition %d - this movie is not on this partition: %d", partition, movieId));
                 continue;
             }
 
@@ -96,8 +97,33 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     mFeaturesVectorFloat.add(mFeaturesVector.get(l, 0));
                 }
 
+                String sourceTopic = this.context.topic();
+                int sourceTopicIteration = Integer.parseInt(sourceTopic.substring(sourceTopic.length() - 1));
+                int sinkTopicIteration = sourceTopicIteration;
+
+                FeatureMessage featureMsgToBeSent = new FeatureMessage(
+                        movieId,
+                        this.mInBlocksUidStore.get(movieId),
+                        mFeaturesVectorFloat
+                );
+
+                if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
+                    System.out.println(String.format("finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+                    context.forward(
+                            0,
+                            featureMsgToBeSent,
+                            To.child("movie-features-sink-" + ALSApp.NUM_ALS_ITERATIONS)
+                    );
+                }
+
+                System.out.println(String.format("not finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                 for (int targetPartition : this.mOutBlocksStore.get(movieId)) {
-                    context.forward(targetPartition, new FeatureMessage(movieId, this.mInBlocksUidStore.get(movieId), mFeaturesVectorFloat));
+                    // TODO: don't hardcode sink name
+                    context.forward(
+                            targetPartition,
+                            featureMsgToBeSent,
+                            To.child("movie-features-sink-" + sinkTopicIteration)
+                    );
                 }
             }
         }
