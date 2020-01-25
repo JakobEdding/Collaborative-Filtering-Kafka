@@ -224,6 +224,7 @@ public class ALSApp extends BaseKafkaApp {
                 .addProcessor("UFeatureCalculator-" + i, UFeatureCalculator::new, "movie-features-source-" + i)
                 .addSink(
                         "user-features-sink-" + (i + 1),
+                        // note that this topic has 1 partition if (i + 1) == NUM_ALS_ITERATIONS to collect final feature vectors; else it has NUM_PARTITIONS partitions
                         USER_FEATURES_TOPIC + "-" + (i + 1),
                         Serdes.Integer().serializer(),
                         new FeatureMessageSerializer(),
@@ -237,12 +238,31 @@ public class ALSApp extends BaseKafkaApp {
         topology
             .addSink(
                     "movie-features-sink-" + NUM_ALS_ITERATIONS,
+                    // note that this topic only has 1 partition to collect final feature vectors
                     MOVIE_FEATURES_TOPIC + "-" + NUM_ALS_ITERATIONS,
                     Serdes.Integer().serializer(),
                     new FeatureMessageSerializer(),
                     new PureModStreamPartitioner<Integer, Object>(),
                     "MFeatureCalculator-" + (NUM_ALS_ITERATIONS - 1)
             )
+        ;
+
+        topology
+            .addSource(
+                    "movie-features-final-source",
+                    Serdes.Integer().deserializer(),
+                    new FeatureMessageDeserializer(),
+                    MOVIE_FEATURES_TOPIC + "-" + NUM_ALS_ITERATIONS
+
+            )
+            .addSource(
+                    "user-features-final-source",
+                    Serdes.Integer().deserializer(),
+                    new FeatureMessageDeserializer(),
+                    USER_FEATURES_TOPIC + "-" + NUM_ALS_ITERATIONS
+
+            )
+            .addProcessor("FeatureCollector", FeatureCollector::new, "user-features-final-source", "movie-features-final-source")
         ;
 
         return topology;

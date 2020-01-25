@@ -39,8 +39,8 @@ docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic user-feature
 docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movie-features-5 --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
 docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic user-features-6 --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
 docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movie-features-6 --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
-docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic user-features-7 --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
-docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movie-features-7 --replication-factor 1 --partitions 4 --zookeeper zookeeper-1
+docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic user-features-7 --replication-factor 1 --partitions 1 --zookeeper zookeeper-1
+docker-compose exec kafka-1 ./usr/bin/kafka-topics --create --topic movie-features-7 --replication-factor 1 --partitions 1 --zookeeper zookeeper-1
 
 #echo "topics after: `docker-compose exec kafka-1 ./usr/bin/kafka-topics --list --zookeeper zookeeper-1`"
 
