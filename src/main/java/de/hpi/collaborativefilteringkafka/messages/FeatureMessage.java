@@ -15,6 +15,6 @@ public class FeatureMessage {
     }
 
     public String toString() {
-        return String.format("Id: %d, Dependent-Ids: %s, Features: %s", this.id, this.dependentIds.toString(), this.features.toString());
+        return String.format("Id: %d, Dependent-Ids: %s, Features: %s", this.id, this.dependentIds, this.features);
     }
 }

@@ -1,14 +1,15 @@
 package de.hpi.collaborativefilteringkafka.processors;
 
 import de.hpi.collaborativefilteringkafka.apps.ALSApp;
+import de.hpi.collaborativefilteringkafka.messages.IdRatingPairMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 
-public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, String> {
+public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatingPairMessage> {
     private ProcessorContext context;
     private KeyValueStore<Integer, ArrayList<Integer>> mInBlocksUidStore;
     private KeyValueStore<Integer, ArrayList<Short>> mInBlocksRatingsStore;
@@ -24,29 +25,26 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, String>
     }
 
     @Override
-    public void process(final Integer movieId, final String userIdRatingPair) {
-        if (userIdRatingPair.equals("EOF")) {
-            this.context.forward(movieId, userIdRatingPair);
+    public void process(final Integer movieId, final IdRatingPairMessage userIdRatingPairMsg) {
+        if (userIdRatingPairMsg.id == -1) {
+            this.context.forward(movieId, userIdRatingPairMsg);
             this.context.commit();
             return;
         }
 //        System.out.println(String.format("MRatings2BlocksProcessor - processing key: %d value: %s", movieId, ratingsForOneMovie));
 
+        int userId = userIdRatingPairMsg.id;
+        short rating = userIdRatingPairMsg.rating;
 
-        String[] split = userIdRatingPair.split(",");
-
-        int userId = Integer.parseInt(split[0]);
-        short rating = Short.parseShort(split[1]);
-        Integer partitionInt = userId % ALSApp.NUM_PARTITIONS;
-        short partition = partitionInt.shortValue();
+        short partition = (short) (userId % ALSApp.NUM_PARTITIONS);
 
         ArrayList<Integer> userIds = this.mInBlocksUidStore.get(movieId);
         ArrayList<Short> ratings = this.mInBlocksRatingsStore.get(movieId);
         ArrayList<Short> partitions = this.mOutBlocksStore.get(movieId);
         if (userIds == null) {
-            userIds =  new ArrayList<>(Arrays.asList(userId));
-            ratings =  new ArrayList<>(Arrays.asList(rating));
-            partitions =  new ArrayList<>(Arrays.asList(partition));
+            userIds =  new ArrayList<>(Collections.singletonList(userId));
+            ratings =  new ArrayList<>(Collections.singletonList(rating));
+            partitions =  new ArrayList<>(Collections.singletonList(partition));
         } else {
             userIds.add(userId);
             ratings.add(rating);
@@ -56,10 +54,7 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, String>
         this.mInBlocksRatingsStore.put(movieId, ratings);
         this.mOutBlocksStore.put(movieId, partitions);
 
-        this.context.forward(
-            Integer.parseInt(split[0]),
-            movieId + "," + split[1]
-        );
+        this.context.forward(userId, new IdRatingPairMessage(movieId, rating));
 
         // TODO: commit periodically rather than after every record for better performance?
         this.context.commit();

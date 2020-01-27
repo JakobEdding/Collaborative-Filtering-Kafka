@@ -2,6 +2,7 @@ package de.hpi.collaborativefilteringkafka.processors;
 
 import de.hpi.collaborativefilteringkafka.apps.ALSApp;
 import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
+import de.hpi.collaborativefilteringkafka.messages.IdRatingPairMessage;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
@@ -12,9 +13,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-public class UFeatureInitializer extends AbstractProcessor<Integer, String> {
+public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPairMessage> {
     private ProcessorContext context;
-    private Set<Integer> finishedPartitions;
+    private Set<Short> finishedPartitions;
     private KeyValueStore<Integer, ArrayList<Integer>> uInBlocksMidStore;
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
     private KeyValueStore<Integer, ArrayList<Short>> uOutBlocksStore;
@@ -31,9 +32,8 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, String> {
     }
 
     @Override
-    public void process(final Integer partition, final String eofMessage) {
-        int finishedPartition = Integer.parseInt(eofMessage.split("_")[1]);
-        this.finishedPartitions.add(finishedPartition);
+    public void process(final Integer partition, final IdRatingPairMessage eofMessage) {
+        this.finishedPartitions.add(eofMessage.rating);
 
         if (this.finishedPartitions.size() == ALSApp.NUM_PARTITIONS) {
 //            System.out.println(String.format("received EOF from all partitions on partition %d", partition));

@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO: This is taken from https://github.com/apache/kafka/pull/6592 and should be removed once the PR is merged
 public class FeatureMessageDeserializer implements Deserializer<FeatureMessage> {
 
     private Deserializer<Integer> idDeserializer;

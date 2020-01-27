@@ -1,9 +1,10 @@
 package de.hpi.collaborativefilteringkafka.producers;
 
 import de.hpi.collaborativefilteringkafka.apps.ALSApp;
+import de.hpi.collaborativefilteringkafka.messages.IdRatingPairMessage;
+import de.hpi.collaborativefilteringkafka.serdes.IdRatingPairMessage.IdRatingPairMessageSerializer;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.IntegerSerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -13,7 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 public class NetflixDataFormatProducer {
-    private Producer<Integer, String> producer;
+    private Producer<Integer, IdRatingPairMessage> producer;
     private String dataFilePath;
     // TODO: get this from 1st processor?
     private String topicName;
@@ -26,13 +27,13 @@ public class NetflixDataFormatProducer {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "netflix-data-producer-" + UUID.randomUUID().toString());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IdRatingPairMessageSerializer.class.getName());
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, PureModPartitioner.class.getName());
 
         this.producer = new KafkaProducer<>(props);
     }
 
-    private void sendAndLog(ProducerRecord<Integer, String> record) {
+    private void sendAndLog(ProducerRecord<Integer, IdRatingPairMessage> record) {
         try {
             RecordMetadata metadata = this.producer.send(record).get();
 //            System.out.println("Record sent to partition " + metadata.partition()
@@ -52,8 +53,9 @@ public class NetflixDataFormatProducer {
             if (row.endsWith(":")) {
                 currentMovieId = Integer.parseInt(row.split(":")[0]);
             } else {
-                ProducerRecord<Integer, String> record = new ProducerRecord<>(
-                        this.topicName, currentMovieId, row.substring(0, row.lastIndexOf(',')));
+                String[] split = row.split(",");
+                ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(
+                        this.topicName, currentMovieId, new IdRatingPairMessage(Integer.parseInt(split[0]), Short.parseShort(split[1])));
                 this.sendAndLog(record);
             }
         }
@@ -62,7 +64,7 @@ public class NetflixDataFormatProducer {
 
         // send EOF to signal that producer is done
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
-            ProducerRecord<Integer, String> record = new ProducerRecord<>(this.topicName, partition, "EOF");
+            ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(this.topicName, partition, new IdRatingPairMessage(-1, (short) -1));
             this.sendAndLog(record);
         }
     }

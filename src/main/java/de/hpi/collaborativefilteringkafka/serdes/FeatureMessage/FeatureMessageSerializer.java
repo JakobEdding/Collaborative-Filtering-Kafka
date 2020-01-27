@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-// TODO: This is taken from https://github.com/apache/kafka/pull/6592 and should be removed once the PR is merged
 public class FeatureMessageSerializer implements Serializer<FeatureMessage> {
 
     private Serializer<Integer> idSerializer;
