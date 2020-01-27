@@ -8,6 +8,7 @@ import org.apache.kafka.streams.processor.PunctuationType;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,8 +90,11 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         FMatrixRMaj predictionMatrix = new FMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
         CommonOps_FDRM.multTransB(this.uFeaturesMatrix, this.mFeaturesMatrix, predictionMatrix);
 
-        System.out.println("result");
-        System.out.println(predictionMatrix);
+        System.out.println(String.format("Done at %s", new Timestamp(System.currentTimeMillis())));
+//        System.out.println("result");
+//        System.out.println(predictionMatrix);
+
+        // save as CSV
 
         return;
     }

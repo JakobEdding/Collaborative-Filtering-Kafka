@@ -8,7 +8,6 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -36,8 +35,8 @@ public class NetflixDataFormatProducer {
     private void sendAndLog(ProducerRecord<Integer, String> record) {
         try {
             RecordMetadata metadata = this.producer.send(record).get();
-            System.out.println("Record sent to partition " + metadata.partition()
-                    + " with offset " + metadata.offset());
+//            System.out.println("Record sent to partition " + metadata.partition()
+//                    + " with offset " + metadata.offset());
         } catch (ExecutionException | InterruptedException e) {
             System.out.println("Error in sending record");
             System.out.println(e);
@@ -48,30 +47,22 @@ public class NetflixDataFormatProducer {
         BufferedReader dataFileReader = new BufferedReader(new FileReader(this.dataFilePath));
         String row;
         int currentMovieId = -1;
-        ArrayList<String> userIdRatingPairs = new ArrayList<>();
 
         while ((row = dataFileReader.readLine()) != null) {
             if (row.endsWith(":")) {
-                if (currentMovieId != -1) {
-                    ProducerRecord<Integer, String> record = new ProducerRecord<>(
-                            this.topicName, currentMovieId, String.join(";", userIdRatingPairs));
-                    userIdRatingPairs = new ArrayList<>();
-                    this.sendAndLog(record);
-                }
                 currentMovieId = Integer.parseInt(row.split(":")[0]);
             } else {
-                userIdRatingPairs.add(row.substring(0, row.lastIndexOf(',')));
+                ProducerRecord<Integer, String> record = new ProducerRecord<>(
+                        this.topicName, currentMovieId, row.substring(0, row.lastIndexOf(',')));
+                this.sendAndLog(record);
             }
         }
-
-        ProducerRecord<Integer, String> record = new ProducerRecord<>(this.topicName, currentMovieId, String.join(";", userIdRatingPairs));
-        this.sendAndLog(record);
 
         dataFileReader.close();
 
         // send EOF to signal that producer is done
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
-            record = new ProducerRecord<>(this.topicName, partition, "EOF");
+            ProducerRecord<Integer, String> record = new ProducerRecord<>(this.topicName, partition, "EOF");
             this.sendAndLog(record);
         }
     }

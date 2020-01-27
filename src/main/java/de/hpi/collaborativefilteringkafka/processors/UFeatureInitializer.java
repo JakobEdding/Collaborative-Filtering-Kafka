@@ -36,7 +36,7 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, String> {
         this.finishedPartitions.add(finishedPartition);
 
         if (this.finishedPartitions.size() == ALSApp.NUM_PARTITIONS) {
-            System.out.println(String.format("received EOF from all partitions on partition %d", partition));
+//            System.out.println(String.format("received EOF from all partitions on partition %d", partition));
 //                        debugStuff();
 
             KeyValueIterator<Integer, ArrayList<Integer>> uInBlocksMidIterator = uInBlocksMidStore.all();
@@ -63,7 +63,7 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, String> {
     }
 
     private void debugStuff() {
-        System.out.println("dumping store contents now");
+//        System.out.println("dumping store contents now");
 
         String[] storeNamesValueTypeInteger = new String[] {
                 ALSApp.M_INBLOCKS_UID_STORE,
@@ -80,20 +80,20 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, String> {
         for (String storeName : storeNamesValueTypeInteger) {
             KeyValueStore<Integer, ArrayList<Integer>> store = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(storeName);
             KeyValueIterator<Integer, ArrayList<Integer>> iterator = store.all();
-            System.out.println(storeName);
+//            System.out.println(storeName);
             while (iterator.hasNext()) {
                 KeyValue<Integer, ArrayList<Integer>> kv = iterator.next();
-                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
+//                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
             }
         }
 
         for (String storeName : storeNamesValueTypeShort) {
             KeyValueStore<Integer, ArrayList<Short>> store = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(storeName);
             KeyValueIterator<Integer, ArrayList<Short>> iterator = store.all();
-            System.out.println(storeName);
+//            System.out.println(storeName);
             while (iterator.hasNext()) {
                 KeyValue<Integer, ArrayList<Short>> kv = iterator.next();
-                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
+//                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
             }
         }
     }

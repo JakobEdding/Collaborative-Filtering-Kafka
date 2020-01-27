@@ -33,7 +33,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
-        System.out.println(String.format("Received: MFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
+//        System.out.println(String.format("Received: MFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
 
         int userIdForFeatures = msg.id;
         ArrayList<Integer> movieIds = msg.dependentIds;
@@ -108,7 +108,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 );
 
                 if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
-                    System.out.println(String.format("finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+//                    System.out.println(String.format("finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     context.forward(
                             0,
                             featureMsgToBeSent,
@@ -116,7 +116,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     );
                 }
 
-                System.out.println(String.format("not finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+//                System.out.println(String.format("not finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                 for (int targetPartition : this.mOutBlocksStore.get(movieId)) {
                     // TODO: don't hardcode sink name
                     context.forward(

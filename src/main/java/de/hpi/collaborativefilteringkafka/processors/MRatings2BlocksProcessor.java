@@ -6,8 +6,7 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
 
 public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, String> {
     private ProcessorContext context;
@@ -25,38 +24,42 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, String>
     }
 
     @Override
-    public void process(final Integer movieId, final String ratingsForOneMovie) {
-        if (ratingsForOneMovie.equals("EOF")) {
-            this.context.forward(movieId, ratingsForOneMovie);
+    public void process(final Integer movieId, final String userIdRatingPair) {
+        if (userIdRatingPair.equals("EOF")) {
+            this.context.forward(movieId, userIdRatingPair);
             this.context.commit();
             return;
         }
-        System.out.println(String.format("MRatings2BlocksProcessor - processing key: %d value: %s", movieId, ratingsForOneMovie));
+//        System.out.println(String.format("MRatings2BlocksProcessor - processing key: %d value: %s", movieId, ratingsForOneMovie));
 
-        ArrayList<Integer> userIds = new ArrayList<>();
-        ArrayList<Short> ratings = new ArrayList<>();
-        Set<Short> partitions = new HashSet<>();
-        for (String userIdRatingPair : ratingsForOneMovie.split(";")) {
-            String[] split = userIdRatingPair.split(",");
-            int userId = Integer.parseInt(split[0]);
+
+        String[] split = userIdRatingPair.split(",");
+
+        int userId = Integer.parseInt(split[0]);
+        short rating = Short.parseShort(split[1]);
+        Integer partitionInt = userId % ALSApp.NUM_PARTITIONS;
+        short partition = partitionInt.shortValue();
+
+        ArrayList<Integer> userIds = this.mInBlocksUidStore.get(movieId);
+        ArrayList<Short> ratings = this.mInBlocksRatingsStore.get(movieId);
+        ArrayList<Short> partitions = this.mOutBlocksStore.get(movieId);
+        if (userIds == null) {
+            userIds =  new ArrayList<>(Arrays.asList(userId));
+            ratings =  new ArrayList<>(Arrays.asList(rating));
+            partitions =  new ArrayList<>(Arrays.asList(partition));
+        } else {
             userIds.add(userId);
-            ratings.add(Short.parseShort(split[1]));
-            Integer partitionInt = userId % ALSApp.NUM_PARTITIONS;
-            partitions.add(partitionInt.shortValue());
+            ratings.add(rating);
+            partitions.add(partition);
         }
-
         this.mInBlocksUidStore.put(movieId, userIds);
         this.mInBlocksRatingsStore.put(movieId, ratings);
-        ArrayList<Short> partitionsList = new ArrayList<>(partitions);
-        this.mOutBlocksStore.put(movieId, partitionsList);
+        this.mOutBlocksStore.put(movieId, partitions);
 
-        for (String userIdRatingPair : ratingsForOneMovie.split(";")) {
-            // TODO: does this partition?
-            this.context.forward(
-                Integer.parseInt(userIdRatingPair.split(",")[0]),
-                movieId + "," + userIdRatingPair.split(",")[1]
-            );
-        }
+        this.context.forward(
+            Integer.parseInt(split[0]),
+            movieId + "," + split[1]
+        );
 
         // TODO: commit periodically rather than after every record for better performance?
         this.context.commit();

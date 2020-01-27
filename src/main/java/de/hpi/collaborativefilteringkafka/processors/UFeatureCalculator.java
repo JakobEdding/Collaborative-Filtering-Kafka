@@ -33,7 +33,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
-        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
+//        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
 
         int movieIdForFeatures = msg.id;
         ArrayList<Integer> userIds = msg.dependentIds;
@@ -108,14 +108,14 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 );
 
                 if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
-                    System.out.println(String.format("finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+//                    System.out.println(String.format("finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     context.forward(
                             0,
                             featureMsgToBeSent,
                             To.child("user-features-sink-" + sinkTopicIteration)
                     );
                 } else {
-                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+//                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     for (int targetPartition : this.uOutBlocksStore.get(userId)) {
                         // TODO: don't hardcode sink name
                         context.forward(

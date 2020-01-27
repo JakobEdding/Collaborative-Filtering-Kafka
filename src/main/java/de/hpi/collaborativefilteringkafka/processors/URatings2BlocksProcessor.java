@@ -33,7 +33,7 @@ public class URatings2BlocksProcessor extends AbstractProcessor<Integer, String>
             return;
         }
 
-        System.out.println(String.format("URatings2BlocksProcessor - processing key: %d value: %s", userId, movieIdRatingPair));
+//        System.out.println(String.format("URatings2BlocksProcessor - processing key: %d value: %s", userId, movieIdRatingPair));
 
         String[] split = movieIdRatingPair.split(",");
 

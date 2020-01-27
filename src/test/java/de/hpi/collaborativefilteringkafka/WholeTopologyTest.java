@@ -55,7 +55,7 @@ public class WholeTopologyTest {
         try {
             testDriver.close();
         } catch (final RuntimeException e) {
-            System.out.println("Ignoring exception, test failing in Windows due this exception:" + e.getLocalizedMessage());
+//            System.out.println("Ignoring exception, test failing in Windows due this exception:" + e.getLocalizedMessage());
         }
     }
 
