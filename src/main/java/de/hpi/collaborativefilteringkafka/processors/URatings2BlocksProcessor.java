@@ -6,6 +6,7 @@ import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -22,11 +23,16 @@ public class URatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.uInBlocksMidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.U_INBLOCKS_MID_STORE);
         this.uInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_INBLOCKS_RATINGS_STORE);
         this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
+
+//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+//            this.context.commit();
+//        });
     }
 
     @Override
     public void process(final Integer userId, final IdRatingPairMessage movieIdRatingPairMsg) {
         if (movieIdRatingPairMsg.id == -1) {
+            System.out.println(String.format("Got EOF on URatings2BlocksProcessor for partition %d at %s", context.partition(), new Timestamp(System.currentTimeMillis())));
             for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
                 this.context.forward(partition, new IdRatingPairMessage(-1, (short) context.partition()));
             }
@@ -56,7 +62,7 @@ public class URatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.uInBlocksRatingsStore.put(userId, ratings);
         this.uOutBlocksStore.put(userId, partitions);
 
-        this.context.commit();
+//        this.context.commit();
     }
 
     @Override
