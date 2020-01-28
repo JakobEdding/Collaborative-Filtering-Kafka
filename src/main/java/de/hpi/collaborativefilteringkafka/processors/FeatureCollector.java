@@ -44,9 +44,10 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {
-                    this.hasPredictionMatrixBeenComputed = true;
+                    System.out.println(String.format("Start Prediction Matrix Computation at %s", new Timestamp(System.currentTimeMillis())));
                     this.constructFeatureMatrices();
                     this.calculatePredictionMatrix();
+                    this.hasPredictionMatrixBeenComputed = true;
                 } else {
                     this.mostRecentMFeaturesMapSize = this.mFeaturesMap.size();
                     this.mostRecentUFeaturesMapSize = this.uFeaturesMap.size();
