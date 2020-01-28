@@ -29,6 +29,10 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
         this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
 
         this.userIdToMovieFeatureVectors = new HashMap<>();
+
+//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+//            this.context.commit();
+//        });
     }
 
     @Override

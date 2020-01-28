@@ -29,6 +29,10 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
         this.uInBlocksMidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.U_INBLOCKS_MID_STORE);
         this.uInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_INBLOCKS_RATINGS_STORE);
         this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
+
+//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+//            this.context.commit();
+//        });
     }
 
     @Override
@@ -62,41 +66,41 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
         }
     }
 
-    private void debugStuff() {
-//        System.out.println("dumping store contents now");
-
-        String[] storeNamesValueTypeInteger = new String[] {
-                ALSApp.M_INBLOCKS_UID_STORE,
-                ALSApp.U_INBLOCKS_MID_STORE
-        };
-
-        String[] storeNamesValueTypeShort = new String[] {
-                ALSApp.M_INBLOCKS_RATINGS_STORE,
-                ALSApp.M_OUTBLOCKS_STORE,
-                ALSApp.U_INBLOCKS_RATINGS_STORE,
-                ALSApp.U_OUTBLOCKS_STORE
-        };
-
-        for (String storeName : storeNamesValueTypeInteger) {
-            KeyValueStore<Integer, ArrayList<Integer>> store = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(storeName);
-            KeyValueIterator<Integer, ArrayList<Integer>> iterator = store.all();
-//            System.out.println(storeName);
-            while (iterator.hasNext()) {
-                KeyValue<Integer, ArrayList<Integer>> kv = iterator.next();
-//                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
-            }
-        }
-
-        for (String storeName : storeNamesValueTypeShort) {
-            KeyValueStore<Integer, ArrayList<Short>> store = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(storeName);
-            KeyValueIterator<Integer, ArrayList<Short>> iterator = store.all();
-//            System.out.println(storeName);
-            while (iterator.hasNext()) {
-                KeyValue<Integer, ArrayList<Short>> kv = iterator.next();
-//                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
-            }
-        }
-    }
+//    private void debugStuff() {
+////        System.out.println("dumping store contents now");
+//
+//        String[] storeNamesValueTypeInteger = new String[] {
+//                ALSApp.M_INBLOCKS_UID_STORE,
+//                ALSApp.U_INBLOCKS_MID_STORE
+//        };
+//
+//        String[] storeNamesValueTypeShort = new String[] {
+//                ALSApp.M_INBLOCKS_RATINGS_STORE,
+//                ALSApp.M_OUTBLOCKS_STORE,
+//                ALSApp.U_INBLOCKS_RATINGS_STORE,
+//                ALSApp.U_OUTBLOCKS_STORE
+//        };
+//
+//        for (String storeName : storeNamesValueTypeInteger) {
+//            KeyValueStore<Integer, ArrayList<Integer>> store = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(storeName);
+//            KeyValueIterator<Integer, ArrayList<Integer>> iterator = store.all();
+////            System.out.println(storeName);
+//            while (iterator.hasNext()) {
+//                KeyValue<Integer, ArrayList<Integer>> kv = iterator.next();
+////                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
+//            }
+//        }
+//
+//        for (String storeName : storeNamesValueTypeShort) {
+//            KeyValueStore<Integer, ArrayList<Short>> store = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(storeName);
+//            KeyValueIterator<Integer, ArrayList<Short>> iterator = store.all();
+////            System.out.println(storeName);
+//            while (iterator.hasNext()) {
+//                KeyValue<Integer, ArrayList<Short>> kv = iterator.next();
+////                System.out.println(String.format("%d: %s", kv.key, kv.value.toString()));
+//            }
+//        }
+//    }
 
     @Override
     public void close() {}

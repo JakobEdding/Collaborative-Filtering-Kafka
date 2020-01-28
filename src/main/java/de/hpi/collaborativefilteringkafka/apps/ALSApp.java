@@ -186,7 +186,8 @@ public class ALSApp extends BaseKafkaApp {
 
                 .addSource("eof-source", EOF_TOPIC)
                 .addProcessor("UFeatureInitializer", UFeatureInitializer::new, "eof-source")
-                .connectProcessorAndStateStores("UFeatureInitializer", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
+//                .connectProcessorAndStateStores("UFeatureInitializer", M_INBLOCKS_UID_STORE, M_INBLOCKS_RATINGS_STORE, M_OUTBLOCKS_STORE, U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
+                .connectProcessorAndStateStores("UFeatureInitializer", U_INBLOCKS_MID_STORE, U_INBLOCKS_RATINGS_STORE, U_OUTBLOCKS_STORE)
                 .addSink(
                         "user-features-sink-0",
                         USER_FEATURES_TOPIC + "-0",
