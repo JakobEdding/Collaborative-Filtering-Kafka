@@ -55,7 +55,8 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
                 featureVector.add(averageRating);
 
                 for(int i = 1; i < ALSApp.NUM_FEATURES; i++) {
-                    featureVector.add((float) (ALSApp.MIN_RATING + Math.random() * (ALSApp.MAX_RATING - ALSApp.MIN_RATING)));
+//                    featureVector.add((float) (ALSApp.MIN_RATING + Math.random() * (ALSApp.MAX_RATING - ALSApp.MIN_RATING)));
+                    featureVector.add((float) Math.random());
                 }
 
                 int userId = userIdToMovieIds.key;
