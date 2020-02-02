@@ -20,6 +20,8 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     private KeyValueStore<Integer, ArrayList<Short>> mInBlocksRatingsStore;
     private KeyValueStore<Integer, ArrayList<Short>> mOutBlocksStore;
     private HashMap<Integer, HashMap<Integer, ArrayList<Float>>> movieIdToUserFeatureVectors;
+    private long currentMatrixOpTimeAgg;
+    private boolean hasAlreadyPrintedTime;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -31,6 +33,15 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
         this.mOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.M_OUTBLOCKS_STORE);
 
         this.movieIdToUserFeatureVectors = new HashMap<>();
+        this.currentMatrixOpTimeAgg = 0L;
+        this.hasAlreadyPrintedTime = false;
+
+        this.context.schedule(Duration.ofSeconds(80), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+            if (!this.hasAlreadyPrintedTime && !this.movieIdToUserFeatureVectors.isEmpty()) {
+                System.out.println(String.format("MFeatCalc, partition: %d, time spent on matrix stuff: %d", this.context.partition(), this.currentMatrixOpTimeAgg / 1000L));
+                this.hasAlreadyPrintedTime = true;
+            }
+        });
 
 //        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
 //            this.context.commit();
@@ -70,6 +81,8 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     }
                     i++;
                 }
+
+                long before = System.currentTimeMillis();
                 // user features matrix ordered by userid (rows) with ALSApp.NUM_FEATURES features (cols)
                 FMatrixRMaj uFeaturesMatrix = new FMatrixRMaj(uFeatures);
 
@@ -97,6 +110,8 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 FMatrixRMaj mFeaturesVector = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
                 CommonOps_FDRM.invert(newA);
                 CommonOps_FDRM.mult(newA, V, mFeaturesVector);
+
+                this.currentMatrixOpTimeAgg += (System.currentTimeMillis() - before);
 
                 ArrayList<Float> mFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
                 for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {

@@ -4,11 +4,13 @@ import de.hpi.collaborativefilteringkafka.apps.ALSApp;
 import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.processor.To;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -18,6 +20,8 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
     private KeyValueStore<Integer, ArrayList<Short>> uOutBlocksStore;
     private HashMap<Integer, HashMap<Integer, ArrayList<Float>>> userIdToMovieFeatureVectors;
+    private long currentMatrixOpTimeAgg;
+    private boolean hasAlreadyPrintedTime;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -29,6 +33,15 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
         this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
 
         this.userIdToMovieFeatureVectors = new HashMap<>();
+        this.currentMatrixOpTimeAgg = 0L;
+        this.hasAlreadyPrintedTime = false;
+
+        this.context.schedule(Duration.ofSeconds(80), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+            if (!this.hasAlreadyPrintedTime && !this.userIdToMovieFeatureVectors.isEmpty()) {
+                System.out.println(String.format("UFeatCalc, partition: %d, time spent on matrix stuff: %d", this.context.partition(), this.currentMatrixOpTimeAgg / 1000L));
+                this.hasAlreadyPrintedTime = true;
+            }
+        });
 
 //        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
 //            this.context.commit();
@@ -68,6 +81,8 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     }
                     i++;
                 }
+
+                long before = System.currentTimeMillis();
                 // movie features matrix ordered by movieid (rows) with ALSApp.NUM_FEATURES features (cols)
                 FMatrixRMaj mFeaturesMatrix = new FMatrixRMaj(mFeatures);
 
@@ -95,6 +110,8 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 FMatrixRMaj uFeaturesVector = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
                 CommonOps_FDRM.invert(newA);
                 CommonOps_FDRM.mult(newA, V, uFeaturesVector);
+
+                this.currentMatrixOpTimeAgg += (System.currentTimeMillis() - before);
 
                 ArrayList<Float> uFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
                 for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {
