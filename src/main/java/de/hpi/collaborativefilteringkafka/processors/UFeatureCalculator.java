@@ -13,6 +13,7 @@ import org.ejml.dense.row.CommonOps_FDRM;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessage> {
     private ProcessorContext context;
@@ -36,9 +37,9 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
         this.currentMatrixOpTimeAgg = 0L;
         this.hasAlreadyPrintedTime = false;
 
-        this.context.schedule(Duration.ofSeconds(80), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+        this.context.schedule(Duration.ofSeconds(60), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             if (!this.hasAlreadyPrintedTime && !this.userIdToMovieFeatureVectors.isEmpty()) {
-                System.out.println(String.format("UFeatCalc, partition: %d, time spent on matrix stuff: %d", this.context.partition(), this.currentMatrixOpTimeAgg / 1000L));
+                System.out.println(String.format("UFeatCalc, partition: %d, time spent on matrix stuff: %d", this.context.partition(), this.currentMatrixOpTimeAgg));
                 this.hasAlreadyPrintedTime = true;
             }
         });
@@ -52,17 +53,14 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     public void process(final Integer partition, final FeatureMessage msg) {
 //        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
 
+        long before = System.currentTimeMillis();
+
         int movieIdForFeatures = msg.id;
         ArrayList<Integer> userIds = msg.dependentIds;
         ArrayList<Float> features = msg.features;
 
         for (int userId : userIds) {
             ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
-            if (inBlockMidsForU == null) {
-                // wrong partition for user
-//                System.out.println(String.format("Received: UFeatureCalculator - partition %d - this user is not on this partition: %d", partition, userId));
-                continue;
-            }
 
             HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
             if (movieIdToFeature == null) {
@@ -81,8 +79,6 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     }
                     i++;
                 }
-
-                long before = System.currentTimeMillis();
                 // movie features matrix ordered by movieid (rows) with ALSApp.NUM_FEATURES features (cols)
                 FMatrixRMaj mFeaturesMatrix = new FMatrixRMaj(mFeatures);
 
@@ -111,8 +107,6 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 CommonOps_FDRM.invert(newA);
                 CommonOps_FDRM.mult(newA, V, uFeaturesVector);
 
-                this.currentMatrixOpTimeAgg += (System.currentTimeMillis() - before);
-
                 ArrayList<Float> uFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
                 for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {
                     uFeaturesVectorFloat.add(uFeaturesVector.get(l, 0));
@@ -122,9 +116,10 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 int sourceTopicIteration = Integer.parseInt(sourceTopic.substring(sourceTopic.length() - 1));
                 int sinkTopicIteration = sourceTopicIteration + 1;
 
+                ArrayList<Integer> dependentMids = this.uInBlocksMidStore.get(userId);
                 FeatureMessage featureMsgToBeSent = new FeatureMessage(
                         userId,
-                        this.uInBlocksMidStore.get(userId),
+                        dependentMids,
                         uFeaturesVectorFloat
                 );
 
@@ -139,6 +134,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 //                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     for (int targetPartition : this.uOutBlocksStore.get(userId)) {
                         // TODO: don't hardcode sink name
+                        featureMsgToBeSent.setDependentIds((ArrayList<Integer>) dependentMids.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()));
                         context.forward(
                                 targetPartition,
                                 featureMsgToBeSent,
@@ -148,6 +144,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 }
             }
         }
+        this.currentMatrixOpTimeAgg += (System.currentTimeMillis() - before);
     }
 
     @Override

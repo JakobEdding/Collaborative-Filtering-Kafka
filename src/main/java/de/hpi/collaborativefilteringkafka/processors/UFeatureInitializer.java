@@ -12,6 +12,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPairMessage> {
     private ProcessorContext context;
@@ -60,8 +61,15 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
                 }
 
                 int userId = userIdToMovieIds.key;
+                FeatureMessage featureMsgToBeSent = new FeatureMessage(
+                        userId,
+                        null,
+                        featureVector
+                );
+
                 for(int targetPartition : this.uOutBlocksStore.get(userId)) {
-                    context.forward(targetPartition, new FeatureMessage(userId, userIdToMovieIds.value, featureVector));
+                    featureMsgToBeSent.setDependentIds((ArrayList<Integer>) userIdToMovieIds.value.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()));
+                    context.forward(targetPartition, featureMsgToBeSent);
                 }
             }
         }
