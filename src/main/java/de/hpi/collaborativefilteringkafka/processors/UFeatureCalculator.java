@@ -73,10 +73,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 float[][] mFeatures = new float[inBlockMidsForU.size()][ALSApp.NUM_FEATURES];
                 int i = 0;
                 for (Integer movieId : inBlockMidsForU) {
-                    float[] featuresForCurrentMovieId = movieIdToFeature.get(movieId);
-                    for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                        mFeatures[i][j] = featuresForCurrentMovieId[j];
-                    }
+                    mFeatures[i] = movieIdToFeature.get(movieId);
                     i++;
                 }
                 // movie features matrix ordered by movieid (rows) with ALSApp.NUM_FEATURES features (cols)

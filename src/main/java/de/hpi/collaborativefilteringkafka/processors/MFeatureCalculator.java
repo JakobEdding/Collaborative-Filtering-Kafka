@@ -72,10 +72,7 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 float[][] uFeatures = new float[inBlockUidsForM.size()][ALSApp.NUM_FEATURES];
                 int i = 0;
                 for (Integer userId : inBlockUidsForM) {
-                    float[] featuresForCurrentUserId = userIdToFeature.get(userId);
-                    for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                        uFeatures[i][j] = featuresForCurrentUserId[j];
-                    }
+                    uFeatures[i] = userIdToFeature.get(userId);
                     i++;
                 }
 
