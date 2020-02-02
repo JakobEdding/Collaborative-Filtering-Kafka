@@ -1,16 +1,15 @@
 package de.hpi.collaborativefilteringkafka.processors;
 
+import com.github.fommil.netlib.BLAS;
 import de.hpi.collaborativefilteringkafka.apps.ALSApp;
 import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.processor.To;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -20,11 +19,13 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     private KeyValueStore<Integer, ArrayList<Short>> mInBlocksRatingsStore;
     private KeyValueStore<Integer, ArrayList<Short>> mOutBlocksStore;
     private HashMap<Integer, HashMap<Integer, ArrayList<Float>>> movieIdToUserFeatureVectors;
+    private BLAS blas;
 
     @Override
     @SuppressWarnings("unchecked")
     public void init(final ProcessorContext context) {
         this.context = context;
+        this.blas = BLAS.getInstance();
 
         this.mInBlocksUidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.M_INBLOCKS_UID_STORE);
         this.mInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.M_INBLOCKS_RATINGS_STORE);
@@ -61,29 +62,38 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             movieIdToUserFeatureVectors.put(movieId, userIdToFeature);
 
             if (userIdToFeature.size() == inBlockUidsForM.size()) {  // everything necessary for movie feature calculation has been received
-                float[][] uFeatures = new float[inBlockUidsForM.size()][ALSApp.NUM_FEATURES];
+                double[] uFeatures = new double[inBlockUidsForM.size() * ALSApp.NUM_FEATURES];
                 int i = 0;
                 for (Integer userId : inBlockUidsForM) {
                     ArrayList<Float> featuresForCurrentUserId = userIdToFeature.get(userId);
                     for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                        uFeatures[i][j] = featuresForCurrentUserId.get(j);
+                        uFeatures[i + j] = (double) featuresForCurrentUserId.get(j);
                     }
                     i++;
                 }
-                // user features matrix ordered by userid (rows) with ALSApp.NUM_FEATURES features (cols)
-                FMatrixRMaj uFeaturesMatrix = new FMatrixRMaj(uFeatures);
 
                 ArrayList<Short> movieIdRatingsList = this.mInBlocksRatingsStore.get(movieId);
-
-                float[][] movieIdRatingsArray = new float[movieIdRatingsList.size()][1];
+                double[] movieIdRatingsArray = new double[movieIdRatingsList.size()];
                 for (int k = 0; k < movieIdRatingsArray.length; k++) {
-                    movieIdRatingsArray[k][0] = (float) movieIdRatingsList.get(k);
+                    movieIdRatingsArray[k] = (double) movieIdRatingsList.get(k);
                 }
 
-                FMatrixRMaj movieIdRatingsVector = new FMatrixRMaj(movieIdRatingsArray);
+                double[] V;
+                blas.dgemv(
+                        "t",
+                        inBlockUidsForM.size(),
+                        ALSApp.NUM_FEATURES,
+                        1.0,
+                        uFeatures,
+                        inBlockUidsForM.size(),
+                        movieIdRatingsArray,
+                        0,
+                        0,
+                        V,
+                        0
+                        );
 
-                FMatrixRMaj V = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
-                CommonOps_FDRM.multTransA(uFeaturesMatrix, movieIdRatingsVector, V);
+
 
                 FMatrixRMaj A = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
                 CommonOps_FDRM.multTransA(uFeaturesMatrix, uFeaturesMatrix, A);
