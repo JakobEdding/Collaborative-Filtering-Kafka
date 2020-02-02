@@ -52,12 +52,12 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
                 KeyValue<Integer, ArrayList<Short>> userIdToRatings = uInBlocksRatingsIterator.next();
 
                 float averageRating = (float) userIdToRatings.value.stream().mapToDouble(val -> val).average().orElse(1.0);
-                ArrayList<Float> featureVector = new ArrayList<>(ALSApp.NUM_FEATURES);
-                featureVector.add(averageRating);
+                float[] featureVector = new float[ALSApp.NUM_FEATURES];
+                featureVector[0] = averageRating;
 
                 for(int i = 1; i < ALSApp.NUM_FEATURES; i++) {
 //                    featureVector.add((float) (ALSApp.MIN_RATING + Math.random() * (ALSApp.MAX_RATING - ALSApp.MIN_RATING)));
-                    featureVector.add((float) Math.random());
+                    featureVector[i] = (float) Math.random();
                 }
 
                 int userId = userIdToMovieIds.key;

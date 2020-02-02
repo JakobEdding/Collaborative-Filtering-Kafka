@@ -17,8 +17,8 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     private ProcessorContext context;
 
     // TODO: use TreeMap instead to avoid race conditions? can we be sure of the order of the feature vectors?
-    private HashMap<Integer, ArrayList<Float>> mFeaturesMap;
-    private HashMap<Integer, ArrayList<Float>> uFeaturesMap;
+    private HashMap<Integer, float[]> mFeaturesMap;
+    private HashMap<Integer, float[]> uFeaturesMap;
     private int mostRecentMFeaturesMapSize;
     private int mostRecentUFeaturesMapSize;
     private boolean hasPredictionMatrixBeenComputed;
@@ -68,9 +68,9 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     private void constructFeatureMatrices() {
         float[][] mFeaturesMatrixArray = new float[this.mFeaturesMap.size()][ALSApp.NUM_FEATURES];
         int i = 0;
-        for (ArrayList<Float> mFeatures : this.mFeaturesMap.values()) {
+        for (float[] mFeatures : this.mFeaturesMap.values()) {
             for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                mFeaturesMatrixArray[i][j] = mFeatures.get(j);
+                mFeaturesMatrixArray[i][j] = mFeatures[j];
             }
             i++;
         }
@@ -78,9 +78,9 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
 
         float[][] uFeaturesMatrixArray = new float[this.uFeaturesMap.size()][ALSApp.NUM_FEATURES];
         i = 0;
-        for (ArrayList<Float> uFeatures : this.uFeaturesMap.values()) {
+        for (float[] uFeatures : this.uFeaturesMap.values()) {
             for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                uFeaturesMatrixArray[i][j] = uFeatures.get(j);
+                uFeaturesMatrixArray[i][j] = uFeatures[j];
             }
             i++;
         }

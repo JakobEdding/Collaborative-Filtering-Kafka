@@ -20,7 +20,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     private KeyValueStore<Integer, ArrayList<Integer>> uInBlocksMidStore;
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
     private KeyValueStore<Integer, ArrayList<Short>> uOutBlocksStore;
-    private HashMap<Integer, HashMap<Integer, ArrayList<Float>>> userIdToMovieFeatureVectors;
+    private HashMap<Integer, HashMap<Integer, float[]>> userIdToMovieFeatureVectors;
     private long currentMatrixOpTimeAgg;
     private boolean hasAlreadyPrintedTime;
 
@@ -57,12 +57,12 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
         int movieIdForFeatures = msg.id;
         ArrayList<Integer> userIds = msg.dependentIds;
-        ArrayList<Float> features = msg.features;
+        float[] features = msg.features;
 
         for (int userId : userIds) {
             ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
 
-            HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
+            HashMap<Integer, float[]> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
             if (movieIdToFeature == null) {
                 movieIdToFeature = new HashMap<>();
             }
@@ -73,9 +73,9 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 float[][] mFeatures = new float[inBlockMidsForU.size()][ALSApp.NUM_FEATURES];
                 int i = 0;
                 for (Integer movieId : inBlockMidsForU) {
-                    ArrayList<Float> featuresForCurrentMovieId = movieIdToFeature.get(movieId);
+                    float[] featuresForCurrentMovieId = movieIdToFeature.get(movieId);
                     for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                        mFeatures[i][j] = featuresForCurrentMovieId.get(j);
+                        mFeatures[i][j] = featuresForCurrentMovieId[j];
                     }
                     i++;
                 }
@@ -107,9 +107,9 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 CommonOps_FDRM.invert(newA);
                 CommonOps_FDRM.mult(newA, V, uFeaturesVector);
 
-                ArrayList<Float> uFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
+                float[] uFeaturesVectorFloat = new float[ALSApp.NUM_FEATURES];
                 for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {
-                    uFeaturesVectorFloat.add(uFeaturesVector.get(l, 0));
+                    uFeaturesVectorFloat[l] = uFeaturesVector.get(l, 0);
                 }
 
                 String sourceTopic = this.context.topic();

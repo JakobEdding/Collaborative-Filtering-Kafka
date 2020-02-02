@@ -2,6 +2,7 @@ package de.hpi.collaborativefilteringkafka.serdes.FeatureMessage;
 
 import de.hpi.collaborativefilteringkafka.apps.ALSApp;
 import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
+import de.hpi.collaborativefilteringkafka.serdes.FloatArray.FloatArrayDeserializer;
 import de.hpi.collaborativefilteringkafka.serdes.List.ListDeserializer;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -18,12 +19,12 @@ public class FeatureMessageDeserializer implements Deserializer<FeatureMessage> 
 
     private Deserializer<Integer> idDeserializer;
     private Deserializer<List<Integer>> dependentIdsDeserializer;
-    private Deserializer<List<Float>> featuresDeserializer;
+    private Deserializer<float[]> featuresDeserializer;
 
     public FeatureMessageDeserializer() {
         this.idDeserializer = new IntegerDeserializer();
         this.dependentIdsDeserializer = new ListDeserializer<>(ArrayList.class, Serdes.Integer().deserializer());
-        this.featuresDeserializer = new ListDeserializer<>(ArrayList.class, Serdes.Float().deserializer());
+        this.featuresDeserializer = new FloatArrayDeserializer();
     }
 
     @Override
@@ -45,7 +46,7 @@ public class FeatureMessageDeserializer implements Deserializer<FeatureMessage> 
             if (dis.read(featuresPayload) == -1) {
                 throw new SerializationException("End of the stream was reached prematurely");
             }
-            ArrayList<Float> features = (ArrayList) this.featuresDeserializer.deserialize(topic, featuresPayload);
+            float[] features = this.featuresDeserializer.deserialize(topic, featuresPayload);
 
             return new FeatureMessage(id, dependentIds, features);
         } catch (IOException e) {
