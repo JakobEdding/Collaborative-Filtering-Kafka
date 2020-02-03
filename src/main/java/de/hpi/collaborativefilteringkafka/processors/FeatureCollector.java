@@ -63,8 +63,10 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
         if (this.context.topic().equals("movie-features-" + ALSApp.NUM_ALS_ITERATIONS)) {
+            System.out.println("movie " + msg.id);
             this.mFeaturesMap.put(msg.id, msg.features);
         } else if (this.context.topic().equals("user-features-" + ALSApp.NUM_ALS_ITERATIONS)) {
+            System.out.println("user " + msg.id);
             this.uFeaturesMap.put(msg.id, msg.features);
         }
     }
