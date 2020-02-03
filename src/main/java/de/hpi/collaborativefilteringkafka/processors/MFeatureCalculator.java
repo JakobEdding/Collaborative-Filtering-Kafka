@@ -133,11 +133,11 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 }
 
 //                System.out.println(String.format("not finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
-                for (int targetPartition : this.mOutBlocksStore.get(movieId)) {
+                for (int dependentUid : dependentUids) {
                     // TODO: don't hardcode sink name
-                    featureMsgToBeSent.setDependentIds((ArrayList<Integer>) dependentUids.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()));
+                    featureMsgToBeSent.setDependentId(dependentUid);
                     context.forward(
-                            targetPartition,
+                            dependentUid,
                             featureMsgToBeSent,
                             To.child("movie-features-sink-" + sinkTopicIteration)
                     );

@@ -18,6 +18,11 @@ public class FeatureMessage {
         this.dependentIds = dependentIds;
     }
 
+    public void setDependentId(int dependentId) {
+        this.dependentIds = new ArrayList<>();
+        this.dependentIds.add(dependentId);
+    }
+
     public String toString() {
         return String.format("Id: %d, Dependent-Ids: %s, Features: %s", this.id, this.dependentIds, this.features);
     }

@@ -132,11 +132,11 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                     );
                 } else {
 //                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
-                    for (int targetPartition : this.uOutBlocksStore.get(userId)) {
+                    for (int dependentMid : dependentMids) {
                         // TODO: don't hardcode sink name
-                        featureMsgToBeSent.setDependentIds((ArrayList<Integer>) dependentMids.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()));
+                        featureMsgToBeSent.setDependentId(dependentMid);
                         context.forward(
-                                targetPartition,
+                                dependentMid,
                                 featureMsgToBeSent,
                                 To.child("user-features-sink-" + sinkTopicIteration)
                         );
