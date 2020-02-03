@@ -52,7 +52,9 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         } else {
             userIds.add(userId);
             ratings.add(rating);
-            partitions.add(partition);
+            if(!partitions.contains(partition)) {
+                partitions.add(partition);
+            }
         }
         this.mInBlocksUidStore.put(movieId, userIds);
         this.mInBlocksRatingsStore.put(movieId, ratings);
