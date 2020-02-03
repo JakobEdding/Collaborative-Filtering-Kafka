@@ -38,9 +38,9 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         this.hasPredictionMatrixBeenComputed = false;
 
         // TODO: optimize wait time?
-        this.context.schedule(Duration.ofSeconds(3), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+        this.context.schedule(Duration.ofSeconds(1), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             // if there are no final feature vectors yet, just skip
-            if (this.mFeaturesMap.size() != 0 && this.uFeaturesMap.size() != 0 && !this.hasPredictionMatrixBeenComputed) {
+            if (this.mFeaturesMap.size() == 426 && this.uFeaturesMap.size() == 302 && !this.hasPredictionMatrixBeenComputed) {
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {
