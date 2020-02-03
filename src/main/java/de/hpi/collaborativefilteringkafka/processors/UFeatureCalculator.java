@@ -61,6 +61,11 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
         for (int userId : userIds) {
             ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
+            if(inBlockMidsForU == null) {
+                System.out.println("This shouldn't happen: movie " + userId + " on prt " + context.partition());
+                continue;
+            }
+
             HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
             if (movieIdToFeature == null) {
                 movieIdToFeature = new HashMap<>();

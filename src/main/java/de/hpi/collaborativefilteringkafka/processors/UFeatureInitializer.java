@@ -62,12 +62,14 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
 
                 int userId = userIdToMovieIds.key;
                 for(int targetPartition : this.uOutBlocksStore.get(userId)) {
-                    FeatureMessage featureMsgToBeSent = new FeatureMessage(
-                            userId,
-                            (ArrayList<Integer>) userIdToMovieIds.value.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()),
-                            featureVector
+                    context.forward(
+                            targetPartition,
+                            new FeatureMessage(
+                                    userId,
+                                    (ArrayList<Integer>) userIdToMovieIds.value.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()),
+                                    featureVector
+                            )
                     );
-                    context.forward(targetPartition, featureMsgToBeSent);
                 }
             }
         }
