@@ -14,7 +14,6 @@ public class URatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
     private ProcessorContext context;
     private KeyValueStore<Integer, ArrayList<Integer>> uInBlocksMidStore;
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
-    private KeyValueStore<Integer, ArrayList<Short>> uOutBlocksStore;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -22,7 +21,6 @@ public class URatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.context = context;
         this.uInBlocksMidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.U_INBLOCKS_MID_STORE);
         this.uInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_INBLOCKS_RATINGS_STORE);
-        this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
 
 //        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
 //            this.context.commit();
@@ -48,19 +46,15 @@ public class URatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
 
         ArrayList<Integer> movieIds = this.uInBlocksMidStore.get(userId);
         ArrayList<Short> ratings = this.uInBlocksRatingsStore.get(userId);
-        ArrayList<Short> partitions = this.uOutBlocksStore.get(userId);
         if (movieIds == null) {
             movieIds =  new ArrayList<>(Collections.singletonList(movieId));
             ratings =  new ArrayList<>(Collections.singletonList(rating));
-            partitions =  new ArrayList<>(Collections.singletonList(partition));
         } else {
             movieIds.add(movieId);
             ratings.add(rating);
-            partitions.add(partition);
         }
         this.uInBlocksMidStore.put(userId, movieIds);
         this.uInBlocksRatingsStore.put(userId, ratings);
-        this.uOutBlocksStore.put(userId, partitions);
 
 //        this.context.commit();
     }

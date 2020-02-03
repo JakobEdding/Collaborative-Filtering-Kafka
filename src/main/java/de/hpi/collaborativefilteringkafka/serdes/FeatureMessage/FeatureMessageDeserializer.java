@@ -17,12 +17,10 @@ import java.util.List;
 public class FeatureMessageDeserializer implements Deserializer<FeatureMessage> {
 
     private Deserializer<Integer> idDeserializer;
-    private Deserializer<List<Integer>> dependentIdsDeserializer;
     private Deserializer<List<Float>> featuresDeserializer;
 
     public FeatureMessageDeserializer() {
         this.idDeserializer = new IntegerDeserializer();
-        this.dependentIdsDeserializer = new ListDeserializer<>(ArrayList.class, Serdes.Integer().deserializer());
         this.featuresDeserializer = new ListDeserializer<>(ArrayList.class, Serdes.Float().deserializer());
     }
 
@@ -35,19 +33,13 @@ public class FeatureMessageDeserializer implements Deserializer<FeatureMessage> 
 
             int id = dis.readInt();
 
-            byte[] dependentIdsPayload = new byte[lengthOfDependentIdsList];
-            if (dis.read(dependentIdsPayload) == -1) {
-                throw new SerializationException("End of the stream was reached prematurely");
-            }
-            ArrayList<Integer> dependentIds = (ArrayList) this.dependentIdsDeserializer.deserialize(topic, dependentIdsPayload);
-
             byte[] featuresPayload = new byte[lengthOfFeaturesList];
             if (dis.read(featuresPayload) == -1) {
                 throw new SerializationException("End of the stream was reached prematurely");
             }
             ArrayList<Float> features = (ArrayList) this.featuresDeserializer.deserialize(topic, featuresPayload);
 
-            return new FeatureMessage(id, dependentIds, features);
+            return new FeatureMessage(id, features);
         } catch (IOException e) {
             throw new RuntimeException("Unable to deserialize into a FeatureMessage", e);
         }
@@ -56,7 +48,6 @@ public class FeatureMessageDeserializer implements Deserializer<FeatureMessage> 
     @Override
     public void close() {
         this.idDeserializer.close();
-        this.dependentIdsDeserializer.close();
         this.featuresDeserializer.close();
     }
 
