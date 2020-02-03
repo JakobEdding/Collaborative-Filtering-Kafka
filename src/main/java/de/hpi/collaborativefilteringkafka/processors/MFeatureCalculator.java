@@ -135,10 +135,15 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 //                System.out.println(String.format("not finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                 for (int dependentUid : dependentUids) {
                     // TODO: don't hardcode sink name
-                    featureMsgToBeSent.setDependentId(dependentUid);
+                    ArrayList<Integer> dependentSingleUid = new ArrayList<>();
+                    dependentSingleUid.add(dependentUid);
                     context.forward(
                             dependentUid,
-                            featureMsgToBeSent,
+                            new FeatureMessage(
+                                    movieId,
+                                    dependentSingleUid,
+                                    mFeaturesVectorFloat
+                            ),
                             To.child("movie-features-sink-" + sinkTopicIteration)
                     );
                 }

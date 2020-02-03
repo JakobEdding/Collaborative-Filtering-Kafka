@@ -61,7 +61,6 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
         for (int userId : userIds) {
             ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
-
             HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
             if (movieIdToFeature == null) {
                 movieIdToFeature = new HashMap<>();
@@ -134,10 +133,15 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 //                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     for (int dependentMid : dependentMids) {
                         // TODO: don't hardcode sink name
-                        featureMsgToBeSent.setDependentId(dependentMid);
+                        ArrayList<Integer> dependentSingleMid = new ArrayList<>();
+                        dependentSingleMid.add(dependentMid);
                         context.forward(
                                 dependentMid,
-                                featureMsgToBeSent,
+                                new FeatureMessage(
+                                        userId,
+                                        dependentSingleMid,
+                                        uFeaturesVectorFloat
+                                ),
                                 To.child("user-features-sink-" + sinkTopicIteration)
                         );
                     }
