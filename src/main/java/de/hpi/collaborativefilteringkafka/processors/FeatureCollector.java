@@ -5,12 +5,14 @@ import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
+import org.ejml.data.DMatrixRMaj;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
+import org.ejml.ops.MatrixIO;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage> {
@@ -91,13 +93,22 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         FMatrixRMaj predictionMatrix = new FMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
         CommonOps_FDRM.multTransB(this.uFeaturesMatrix, this.mFeaturesMatrix, predictionMatrix);
 
-        System.out.println(String.format("Done at %s", new Timestamp(System.currentTimeMillis())));
-//        System.out.println("result");
 //        System.out.println(predictionMatrix);
 
-        // save as CSV
+        DMatrixRMaj predictionMatrixDouble = new DMatrixRMaj(predictionMatrix.numRows, predictionMatrix.numCols);
+        for (int i = 0; i < predictionMatrix.numRows; i++) {
+            for (int j = 0; j < predictionMatrix.numCols; j++) {
+                predictionMatrixDouble.set(i, j, predictionMatrix.get(i, j));
+            }
+        }
 
-        return;
+        try {
+            MatrixIO.saveDenseCSV(predictionMatrixDouble, String.format("/Users/j/Documents/Uni/MLDS/.datasets.nosync/predictions/predictions_matrix_%s.csv", new Timestamp(System.currentTimeMillis())));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(String.format("Done at %s", new Timestamp(System.currentTimeMillis())));
     }
 
     @Override
