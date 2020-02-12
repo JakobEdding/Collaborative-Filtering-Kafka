@@ -40,6 +40,7 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
     public void process(final Integer partition, final IdRatingPairMessage eofMessage) {
         this.finishedPartitions.add(eofMessage.rating);
 
+        // TODO: early return
         if (this.finishedPartitions.size() == ALSApp.NUM_PARTITIONS) {
 //            System.out.println(String.format("received EOF from all partitions on partition %d", partition));
 //                        debugStuff();
