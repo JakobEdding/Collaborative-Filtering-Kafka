@@ -13,14 +13,15 @@ import org.ejml.ops.MatrixIO;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Duration;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.TreeMap;
 
 public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage> {
     private ProcessorContext context;
 
     // TODO: use TreeMap instead to avoid race conditions? can we be sure of the order of the feature vectors?
-    private HashMap<Integer, ArrayList<Float>> mFeaturesMap;
-    private HashMap<Integer, ArrayList<Float>> uFeaturesMap;
+    private TreeMap<Integer, ArrayList<Float>> mFeaturesMap;
+    private TreeMap<Integer, ArrayList<Float>> uFeaturesMap;
     private int mostRecentMFeaturesMapSize;
     private int mostRecentUFeaturesMapSize;
     private boolean hasPredictionMatrixBeenComputed;
@@ -33,8 +34,8 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     public void init(final ProcessorContext context) {
         this.context = context;
 
-        this.mFeaturesMap = new HashMap<>();
-        this.uFeaturesMap = new HashMap<>();
+        this.mFeaturesMap = new TreeMap<>();
+        this.uFeaturesMap = new TreeMap<>();
         this.mostRecentMFeaturesMapSize = this.mFeaturesMap.size();
         this.mostRecentUFeaturesMapSize = this.uFeaturesMap.size();
         this.hasPredictionMatrixBeenComputed = false;
