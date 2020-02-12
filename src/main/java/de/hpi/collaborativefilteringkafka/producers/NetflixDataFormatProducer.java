@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.IntegerSerializer;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -35,9 +36,11 @@ public class NetflixDataFormatProducer {
 
     private void sendAndLog(ProducerRecord<Integer, IdRatingPairMessage> record) {
         try {
+            // ATTENTION: send() itself is asynchronous, but get() is synchronous
+            // if you send() and get() instead of just calling send(), producer becomes ~50 times slower!
             RecordMetadata metadata = this.producer.send(record).get();
-//            System.out.println("Record sent to partition " + metadata.partition()
-//                    + " with offset " + metadata.offset());
+            System.out.println("Record sent to partition " + metadata.partition()
+                    + " with offset " + metadata.offset());
         } catch (ExecutionException | InterruptedException e) {
             System.out.println("Error in sending record");
             System.out.println(e);
@@ -45,6 +48,7 @@ public class NetflixDataFormatProducer {
     }
 
     public void runProducer() throws IOException {
+        System.out.println(String.format("Producer starts running at %s", new Timestamp(System.currentTimeMillis())));
         BufferedReader dataFileReader = new BufferedReader(new FileReader(this.dataFilePath));
         String row;
         int currentMovieId = -1;
@@ -56,7 +60,8 @@ public class NetflixDataFormatProducer {
                 String[] split = row.split(",");
                 ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(
                         this.topicName, currentMovieId, new IdRatingPairMessage(Integer.parseInt(split[0]), Short.parseShort(split[1])));
-                this.sendAndLog(record);
+//                this.sendAndLog(record);
+                this.producer.send(record);
             }
         }
 
@@ -65,7 +70,8 @@ public class NetflixDataFormatProducer {
         // send EOF to signal that producer is done
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
             ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(this.topicName, partition, new IdRatingPairMessage(-1, (short) -1));
-            this.sendAndLog(record);
+//            this.sendAndLog(record);
+            this.producer.send(record);
         }
     }
 }

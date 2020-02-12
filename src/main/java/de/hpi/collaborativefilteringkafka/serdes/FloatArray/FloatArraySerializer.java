@@ -15,7 +15,7 @@ public class FloatArraySerializer implements Serializer<float[]> {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final DataOutputStream out = new DataOutputStream(baos)) {
             out.writeInt(data.length);
-            for(Float elem : data) {
+            for(float elem : data) {
                 out.writeFloat(elem);
             }
             return baos.toByteArray();

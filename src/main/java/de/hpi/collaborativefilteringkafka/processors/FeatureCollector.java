@@ -10,7 +10,6 @@ import org.ejml.dense.row.CommonOps_FDRM;
 
 import java.sql.Timestamp;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage> {
@@ -40,7 +39,12 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         // TODO: optimize wait time?
         this.context.schedule(Duration.ofSeconds(1), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             // if there are no final feature vectors yet, just skip
-            if (this.mFeaturesMap.size() == 426 && this.uFeaturesMap.size() == 302 && !this.hasPredictionMatrixBeenComputed) {
+            // SMALL
+//            if (this.mFeaturesMap.size() == 426 && this.uFeaturesMap.size() == 302 && !this.hasPredictionMatrixBeenComputed) {
+            // BIGGER
+//            if (this.mFeaturesMap.size() == 2062 && this.uFeaturesMap.size() == 1034 && !this.hasPredictionMatrixBeenComputed) {
+            // BIGGEST
+            if (this.mFeaturesMap.size() == 3590 && this.uFeaturesMap.size() == 2120 && !this.hasPredictionMatrixBeenComputed) {
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {

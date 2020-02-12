@@ -12,7 +12,9 @@ class ALSAppRunner {
 
         System.out.println(String.format("Start at %s", new Timestamp(System.currentTimeMillis())));
 
-        String pathToTestDataFile = new File("./data/combined_data_1_small_kafka.txt").getAbsolutePath();
+//        String pathToTestDataFile = new File("./data/combined_data_1_small_kafka.txt").getAbsolutePath();
+//        String pathToTestDataFile = new File("./data/combined_data_1_bigger_kafka.txt").getAbsolutePath();
+        String pathToTestDataFile = new File("./data/combined_data_1_biggest_kafka.txt").getAbsolutePath();
         NetflixDataFormatProducer producer = new NetflixDataFormatProducer(pathToTestDataFile);
 
         try {
