@@ -13,12 +13,10 @@ import java.io.IOException;
 public class FeatureMessageSerializer implements Serializer<FeatureMessage> {
 
     private Serializer<Integer> idSerializer;
-    private ListSerializer<Integer> dependentIdsSerializer;
     private ListSerializer<Float> featuresSerializer;
 
     public FeatureMessageSerializer() {
         this.idSerializer = new IntegerSerializer();
-        this.dependentIdsSerializer = new ListSerializer<>(Serdes.Integer().serializer());
         this.featuresSerializer = new ListSerializer<>(Serdes.Float().serializer());
     }
 
@@ -27,7 +25,6 @@ public class FeatureMessageSerializer implements Serializer<FeatureMessage> {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
              final DataOutputStream out = new DataOutputStream(baos)) {
             out.writeInt(data.id);
-            out.write(dependentIdsSerializer.serialize(topic, data.dependentIds));
             out.write(featuresSerializer.serialize(topic, data.features));
             return baos.toByteArray();
         } catch (IOException e) {
@@ -38,7 +35,6 @@ public class FeatureMessageSerializer implements Serializer<FeatureMessage> {
     @Override
     public void close() {
         idSerializer.close();
-        dependentIdsSerializer.close();
         featuresSerializer.close();
     }
 }

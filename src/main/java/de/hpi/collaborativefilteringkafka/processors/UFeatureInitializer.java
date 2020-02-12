@@ -19,7 +19,6 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
     private Set<Short> finishedPartitions;
     private KeyValueStore<Integer, ArrayList<Integer>> uInBlocksMidStore;
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
-    private KeyValueStore<Integer, ArrayList<Short>> uOutBlocksStore;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -29,7 +28,6 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
 
         this.uInBlocksMidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.U_INBLOCKS_MID_STORE);
         this.uInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_INBLOCKS_RATINGS_STORE);
-        this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
 
 //        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
 //            this.context.commit();
@@ -61,14 +59,10 @@ public class UFeatureInitializer extends AbstractProcessor<Integer, IdRatingPair
                 }
 
                 int userId = userIdToMovieIds.key;
-                for(int targetPartition : this.uOutBlocksStore.get(userId)) {
+                for(int movieId : userIdToMovieIds.value) {
                     context.forward(
-                            targetPartition,
-                            new FeatureMessage(
-                                    userId,
-                                    (ArrayList<Integer>) userIdToMovieIds.value.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()),
-                                    featureVector
-                            )
+                            movieId,
+                            new FeatureMessage(userId, featureVector)
                     );
                 }
             }

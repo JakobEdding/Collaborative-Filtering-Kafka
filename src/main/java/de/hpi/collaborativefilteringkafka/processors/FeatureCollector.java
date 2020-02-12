@@ -57,6 +57,10 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
                 }
             }
         });
+        
+        this.context.schedule(Duration.ofSeconds(5), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
+            System.out.println(String.format("Matrix is %d x %d", this.mFeaturesMap.size(), this.uFeaturesMap.size()));
+        });
     }
 
     @Override

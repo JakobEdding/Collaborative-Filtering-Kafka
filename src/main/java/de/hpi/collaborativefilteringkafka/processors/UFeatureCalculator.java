@@ -19,7 +19,6 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     private ProcessorContext context;
     private KeyValueStore<Integer, ArrayList<Integer>> uInBlocksMidStore;
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
-    private KeyValueStore<Integer, ArrayList<Short>> uOutBlocksStore;
     private HashMap<Integer, HashMap<Integer, ArrayList<Float>>> userIdToMovieFeatureVectors;
     private long currentMatrixOpTimeAgg;
     private boolean hasAlreadyPrintedTime;
@@ -31,7 +30,6 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
 
         this.uInBlocksMidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.U_INBLOCKS_MID_STORE);
         this.uInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_INBLOCKS_RATINGS_STORE);
-        this.uOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.U_OUTBLOCKS_STORE);
 
         this.userIdToMovieFeatureVectors = new HashMap<>();
         this.currentMatrixOpTimeAgg = 0L;
@@ -50,106 +48,93 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     }
 
     @Override
-    public void process(final Integer partition, final FeatureMessage msg) {
+    public void process(final Integer userId, final FeatureMessage msg) {
 //        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
 
         long before = System.currentTimeMillis();
 
         int movieIdForFeatures = msg.id;
-        ArrayList<Integer> userIds = msg.dependentIds;
         ArrayList<Float> features = msg.features;
 
-        for (int userId : userIds) {
-            ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
-            if(inBlockMidsForU == null) {
-                System.out.println("This shouldn't happen: movie " + userId + " on prt " + context.partition());
-                continue;
+        ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
+        if(inBlockMidsForU == null) {
+            System.out.println("This shouldn't happen: movie " + userId + " on prt " + context.partition());
+            return;
+        }
+
+        HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
+        if (movieIdToFeature == null) {
+            movieIdToFeature = new HashMap<>();
+        }
+        movieIdToFeature.put(movieIdForFeatures, features);
+        userIdToMovieFeatureVectors.put(userId, movieIdToFeature);
+
+        if (movieIdToFeature.size() == inBlockMidsForU.size()) {  // everything necessary for user feature calculation has been received
+            float[][] mFeatures = new float[inBlockMidsForU.size()][ALSApp.NUM_FEATURES];
+            int i = 0;
+            for (Integer movieId : inBlockMidsForU) {
+                ArrayList<Float> featuresForCurrentMovieId = movieIdToFeature.get(movieId);
+                for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
+                    mFeatures[i][j] = featuresForCurrentMovieId.get(j);
+                }
+                i++;
+            }
+            // movie features matrix ordered by movieid (rows) with ALSApp.NUM_FEATURES features (cols)
+            FMatrixRMaj mFeaturesMatrix = new FMatrixRMaj(mFeatures);
+
+            ArrayList<Short> userIdRatingsList = this.uInBlocksRatingsStore.get(userId);
+
+            float[][] userIdRatingsArray = new float[userIdRatingsList.size()][1];
+            for (int k = 0; k < userIdRatingsArray.length; k++) {
+                userIdRatingsArray[k][0] = (float) userIdRatingsList.get(k);
             }
 
-            HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
-            if (movieIdToFeature == null) {
-                movieIdToFeature = new HashMap<>();
+            FMatrixRMaj userIdRatingsVector = new FMatrixRMaj(userIdRatingsArray);
+
+            FMatrixRMaj V = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
+            CommonOps_FDRM.multTransA(mFeaturesMatrix, userIdRatingsVector, V);
+
+            FMatrixRMaj A = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
+            CommonOps_FDRM.multTransA(mFeaturesMatrix, mFeaturesMatrix, A);
+
+            FMatrixRMaj normalization = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
+            CommonOps_FDRM.scale((float) userIdRatingsArray.length, CommonOps_FDRM.identity(ALSApp.NUM_FEATURES), normalization);
+
+            FMatrixRMaj newA = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
+            CommonOps_FDRM.add(A, ALSApp.ALS_LAMBDA, normalization, newA);
+
+            FMatrixRMaj uFeaturesVector = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
+            CommonOps_FDRM.invert(newA);
+            CommonOps_FDRM.mult(newA, V, uFeaturesVector);
+
+            ArrayList<Float> uFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
+            for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {
+                uFeaturesVectorFloat.add(uFeaturesVector.get(l, 0));
             }
-            movieIdToFeature.put(movieIdForFeatures, features);
-            userIdToMovieFeatureVectors.put(userId, movieIdToFeature);
 
-            if (movieIdToFeature.size() == inBlockMidsForU.size()) {  // everything necessary for user feature calculation has been received
-                float[][] mFeatures = new float[inBlockMidsForU.size()][ALSApp.NUM_FEATURES];
-                int i = 0;
-                for (Integer movieId : inBlockMidsForU) {
-                    ArrayList<Float> featuresForCurrentMovieId = movieIdToFeature.get(movieId);
-                    for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                        mFeatures[i][j] = featuresForCurrentMovieId.get(j);
-                    }
-                    i++;
-                }
-                // movie features matrix ordered by movieid (rows) with ALSApp.NUM_FEATURES features (cols)
-                FMatrixRMaj mFeaturesMatrix = new FMatrixRMaj(mFeatures);
+            String sourceTopic = this.context.topic();
+            int sourceTopicIteration = Integer.parseInt(sourceTopic.substring(sourceTopic.length() - 1));
+            int sinkTopicIteration = sourceTopicIteration + 1;
 
-                ArrayList<Short> userIdRatingsList = this.uInBlocksRatingsStore.get(userId);
+            ArrayList<Integer> dependentMids = this.uInBlocksMidStore.get(userId);
+            FeatureMessage featureMsgToBeSent = new FeatureMessage(userId, uFeaturesVectorFloat);
 
-                float[][] userIdRatingsArray = new float[userIdRatingsList.size()][1];
-                for (int k = 0; k < userIdRatingsArray.length; k++) {
-                    userIdRatingsArray[k][0] = (float) userIdRatingsList.get(k);
-                }
-
-                FMatrixRMaj userIdRatingsVector = new FMatrixRMaj(userIdRatingsArray);
-
-                FMatrixRMaj V = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
-                CommonOps_FDRM.multTransA(mFeaturesMatrix, userIdRatingsVector, V);
-
-                FMatrixRMaj A = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
-                CommonOps_FDRM.multTransA(mFeaturesMatrix, mFeaturesMatrix, A);
-
-                FMatrixRMaj normalization = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
-                CommonOps_FDRM.scale((float) userIdRatingsArray.length, CommonOps_FDRM.identity(ALSApp.NUM_FEATURES), normalization);
-
-                FMatrixRMaj newA = new FMatrixRMaj(ALSApp.NUM_FEATURES, ALSApp.NUM_FEATURES);
-                CommonOps_FDRM.add(A, ALSApp.ALS_LAMBDA, normalization, newA);
-
-                FMatrixRMaj uFeaturesVector = new FMatrixRMaj(ALSApp.NUM_FEATURES, 1);
-                CommonOps_FDRM.invert(newA);
-                CommonOps_FDRM.mult(newA, V, uFeaturesVector);
-
-                ArrayList<Float> uFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
-                for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {
-                    uFeaturesVectorFloat.add(uFeaturesVector.get(l, 0));
-                }
-
-                String sourceTopic = this.context.topic();
-                int sourceTopicIteration = Integer.parseInt(sourceTopic.substring(sourceTopic.length() - 1));
-                int sinkTopicIteration = sourceTopicIteration + 1;
-
-                ArrayList<Integer> dependentMids = this.uInBlocksMidStore.get(userId);
-                FeatureMessage featureMsgToBeSent = new FeatureMessage(
-                        userId,
-                        dependentMids,
-                        uFeaturesVectorFloat
-                );
-
-                if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
+            if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
 //                    System.out.println(String.format("finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+                context.forward(
+                        0,
+                        featureMsgToBeSent,
+                        To.child("user-features-sink-" + sinkTopicIteration)
+                );
+            } else {
+//                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
+                for (int dependentMid : dependentMids) {
+                    // TODO: don't hardcode sink name
                     context.forward(
-                            0,
-                            featureMsgToBeSent,
+                            dependentMid,
+                            new FeatureMessage(userId, uFeaturesVectorFloat),
                             To.child("user-features-sink-" + sinkTopicIteration)
                     );
-                } else {
-//                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
-                    for (int dependentMid : dependentMids) {
-                        // TODO: don't hardcode sink name
-                        ArrayList<Integer> dependentSingleMid = new ArrayList<>();
-                        dependentSingleMid.add(dependentMid);
-                        context.forward(
-                                dependentMid,
-                                new FeatureMessage(
-                                        userId,
-                                        dependentSingleMid,
-                                        uFeaturesVectorFloat
-                                ),
-                                To.child("user-features-sink-" + sinkTopicIteration)
-                        );
-                    }
                 }
             }
         }
