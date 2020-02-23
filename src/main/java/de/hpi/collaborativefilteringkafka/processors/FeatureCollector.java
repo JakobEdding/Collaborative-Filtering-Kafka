@@ -43,7 +43,9 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
             // BIGGER
 //            if (this.mFeaturesMap.size() == 2062 && this.uFeaturesMap.size() == 1034 && !this.hasPredictionMatrixBeenComputed) {
             // BIGGEST
-            if (this.mFeaturesMap.size() == 3590 && this.uFeaturesMap.size() == 2120 && !this.hasPredictionMatrixBeenComputed) {
+//            if (this.mFeaturesMap.size() == 3590 && this.uFeaturesMap.size() == 2120 && !this.hasPredictionMatrixBeenComputed) {
+            // ALL
+            if (this.mFeaturesMap.size() == 17770 && this.uFeaturesMap.size() == 480189 && !this.hasPredictionMatrixBeenComputed) {
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {
