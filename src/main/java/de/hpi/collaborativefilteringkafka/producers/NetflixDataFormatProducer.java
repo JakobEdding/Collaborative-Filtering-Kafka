@@ -30,6 +30,8 @@ public class NetflixDataFormatProducer {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IdRatingPairMessageSerializer.class.getName());
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, PureModPartitioner.class.getName());
+        props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, Long.MAX_VALUE);
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 300000);
 
         this.producer = new KafkaProducer<>(props);
     }
