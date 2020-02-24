@@ -63,7 +63,13 @@ public class NetflixDataFormatProducer {
                 ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(
                         this.topicName, currentMovieId, new IdRatingPairMessage(Integer.parseInt(split[0]), Short.parseShort(split[1])));
 //                this.sendAndLog(record);
-                this.producer.send(record);
+                this.producer.send(record, new Callback() {
+                    public void onCompletion(RecordMetadata metadata, Exception ex) {
+                        if (ex != null) {
+                            System.out.println(String.format("Failed to produce record. Got Exception: %s", ex));
+                        }
+                    }
+                });
             }
         }
 
@@ -73,7 +79,13 @@ public class NetflixDataFormatProducer {
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
             ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(this.topicName, partition, new IdRatingPairMessage(-1, (short) -1));
 //            this.sendAndLog(record);
-            this.producer.send(record);
+            this.producer.send(record, new Callback() {
+                public void onCompletion(RecordMetadata metadata, Exception ex) {
+                    if (ex != null) {
+                        System.out.println(String.format("Failed to produce record. Got Exception: %s", ex));
+                    }
+                }
+            });
         }
     }
 }
