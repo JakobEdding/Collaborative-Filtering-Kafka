@@ -48,6 +48,7 @@ public abstract class BaseKafkaApp implements Callable<Void> {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.Integer().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, IdRatingPairMessageSerde.class.getName());
+        props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 4);
         // setting offset reset to earliest so that we can re-run the demo code with the same pre-loaded data
         // Note: To re-run the demo, you need to use the offset reset tool:
         // https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Streams+Application+Reset+Tool

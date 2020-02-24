@@ -30,6 +30,7 @@ public class NetflixDataFormatProducer {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IdRatingPairMessageSerializer.class.getName());
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, PureModPartitioner.class.getName());
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 1800000);  // 30min
 
         this.producer = new KafkaProducer<>(props);
     }
@@ -61,7 +62,13 @@ public class NetflixDataFormatProducer {
                 ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(
                         this.topicName, currentMovieId, new IdRatingPairMessage(Integer.parseInt(split[0]), Short.parseShort(split[1])));
 //                this.sendAndLog(record);
-                this.producer.send(record);
+                this.producer.send(record, new Callback() {
+                    public void onCompletion(RecordMetadata metadata, Exception ex) {
+                        if (ex != null) {
+                            System.out.println(String.format("Failed to produce record. Got Exception: %s", ex));
+                        }
+                    }
+                });
             }
         }
 
@@ -71,7 +78,13 @@ public class NetflixDataFormatProducer {
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
             ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(this.topicName, partition, new IdRatingPairMessage(-1, (short) -1));
 //            this.sendAndLog(record);
-            this.producer.send(record);
+            this.producer.send(record, new Callback() {
+                public void onCompletion(RecordMetadata metadata, Exception ex) {
+                    if (ex != null) {
+                        System.out.println(String.format("Failed to produce record. Got Exception: %s", ex));
+                    }
+                }
+            });
         }
     }
 }
