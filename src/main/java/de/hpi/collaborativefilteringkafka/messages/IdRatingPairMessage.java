@@ -1,7 +1,6 @@
 package de.hpi.collaborativefilteringkafka.messages;
 
 public class IdRatingPairMessage {
-    // TODO: getters using lombok
     public int id;
     public short rating;
 

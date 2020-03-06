@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class FeatureMessage {
-    // TODO: getters using lombok
     public int id;
     public ArrayList<Integer> dependentIds;
     public float[] features;
