@@ -43,16 +43,10 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 this.hasAlreadyPrintedTime = true;
             }
         });
-
-//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
-//            this.context.commit();
-//        });
     }
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
-//        System.out.println(String.format("Received: MFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
-
         long before = System.currentTimeMillis();
 
         int userIdForFeatures = msg.id;
@@ -121,22 +115,19 @@ public class MFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 );
 
                 if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
-//                    System.out.println(String.format("finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     context.forward(
                             0,
                             featureMsgToBeSent,
-                            To.child("movie-features-sink-" + ALSApp.NUM_ALS_ITERATIONS)
+                            To.child(ALSApp.MOVIE_FEATURES_SINK + ALSApp.NUM_ALS_ITERATIONS)
                     );
                 }
 
-//                System.out.println(String.format("not finishing: MFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                 for (int targetPartition : this.mOutBlocksStore.get(movieId)) {
-                    // TODO: don't hardcode sink name
                     featureMsgToBeSent.setDependentIds((ArrayList<Integer>) dependentUids.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()));
                     context.forward(
                             targetPartition,
                             featureMsgToBeSent,
-                            To.child("movie-features-sink-" + sinkTopicIteration)
+                            To.child(ALSApp.MOVIE_FEATURES_SINK + sinkTopicIteration)
                     );
                 }
             }

@@ -17,7 +17,6 @@ import java.util.concurrent.ExecutionException;
 public class NetflixDataFormatProducer {
     private Producer<Integer, IdRatingPairMessage> producer;
     private String dataFilePath;
-    // TODO: get this from 1st processor?
     private String topicName;
 
     public NetflixDataFormatProducer(String dataFilePath) {
@@ -34,19 +33,6 @@ public class NetflixDataFormatProducer {
         props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 300000);
 
         this.producer = new KafkaProducer<>(props);
-    }
-
-    private void sendAndLog(ProducerRecord<Integer, IdRatingPairMessage> record) {
-        try {
-            // ATTENTION: send() itself is asynchronous, but get() is synchronous
-            // if you send() and get() instead of just calling send(), producer becomes ~50 times slower!
-            RecordMetadata metadata = this.producer.send(record).get();
-            System.out.println("Record sent to partition " + metadata.partition()
-                    + " with offset " + metadata.offset());
-        } catch (ExecutionException | InterruptedException e) {
-            System.out.println("Error in sending record");
-            System.out.println(e);
-        }
     }
 
     public void runProducer() throws IOException {
@@ -78,7 +64,6 @@ public class NetflixDataFormatProducer {
         // send EOF to signal that producer is done
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
             ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(this.topicName, partition, new IdRatingPairMessage(-1, (short) -1));
-//            this.sendAndLog(record);
             this.producer.send(record, new Callback() {
                 public void onCompletion(RecordMetadata metadata, Exception ex) {
                     if (ex != null) {

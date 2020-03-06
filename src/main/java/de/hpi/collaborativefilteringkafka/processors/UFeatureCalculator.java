@@ -43,16 +43,10 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 this.hasAlreadyPrintedTime = true;
             }
         });
-
-//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
-//            this.context.commit();
-//        });
     }
 
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
-//        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
-
         long before = System.currentTimeMillis();
 
         int movieIdForFeatures = msg.id;
@@ -121,21 +115,18 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 );
 
                 if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
-//                    System.out.println(String.format("finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     context.forward(
                             0,
                             featureMsgToBeSent,
-                            To.child("user-features-sink-" + sinkTopicIteration)
+                            To.child(ALSApp.USER_FEATURES_SINK + sinkTopicIteration)
                     );
                 } else {
-//                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                     for (int targetPartition : this.uOutBlocksStore.get(userId)) {
-                        // TODO: don't hardcode sink name
                         featureMsgToBeSent.setDependentIds((ArrayList<Integer>) dependentMids.stream().filter(id -> (id % ALSApp.NUM_PARTITIONS) == targetPartition).collect(Collectors.toList()));
                         context.forward(
                                 targetPartition,
                                 featureMsgToBeSent,
-                                To.child("user-features-sink-" + sinkTopicIteration)
+                                To.child(ALSApp.USER_FEATURES_SINK + sinkTopicIteration)
                         );
                     }
                 }

@@ -16,17 +16,14 @@ import java.util.Properties;
 public class ALSApp extends BaseKafkaApp {
     public final static int NUM_PARTITIONS = 4;
     public final static int NUM_FEATURES = 5;
-    // TODO: what actual init "small" values are used in Spark MLLib?
-    public final static int MIN_RATING = 1;
-    public final static int MAX_RATING = 5;
     public final static float ALS_LAMBDA = 0.05f;
     public final static int NUM_ALS_ITERATIONS = 7;
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieIds-ratings";
     public final static String EOF_TOPIC = "eof";
-    public final static String USER_FEATURES_TOPIC = "user-features";
     public final static String MOVIE_FEATURES_TOPIC = "movie-features";
+    public final static String USER_FEATURES_TOPIC = "user-features";
 
     public final static String M_INBLOCKS_UID_STORE = "m-inblocks-uid";
     public final static String M_INBLOCKS_RATINGS_STORE = "m-inblocks-ratings";
@@ -35,6 +32,9 @@ public class ALSApp extends BaseKafkaApp {
     public final static String U_INBLOCKS_MID_STORE = "u-inblocks-mid";
     public final static String U_INBLOCKS_RATINGS_STORE = "u-inblocks-ratings";
     public final static String U_OUTBLOCKS_STORE = "u-outblocks";
+
+    public final static String MOVIE_FEATURES_SINK = "movie-features-sink-";
+    public final static String USER_FEATURES_SINK = "user-features-sink-";
 
     public ALSApp() {}
 
@@ -128,7 +128,7 @@ public class ALSApp extends BaseKafkaApp {
                 )
                 .addProcessor("UFeatureCalculator-" + i, UFeatureCalculator::new, "movie-features-source-" + i)
                 .addSink(
-                        "user-features-sink-" + (i + 1),
+                        USER_FEATURES_SINK + (i + 1),
                         // note that this topic has 1 partition if (i + 1) == NUM_ALS_ITERATIONS to collect final feature vectors; else it has NUM_PARTITIONS partitions
                         USER_FEATURES_TOPIC + "-" + (i + 1),
                         Serdes.Integer().serializer(),
@@ -142,7 +142,7 @@ public class ALSApp extends BaseKafkaApp {
 
         topology
             .addSink(
-                    "movie-features-sink-" + NUM_ALS_ITERATIONS,
+                    MOVIE_FEATURES_SINK + NUM_ALS_ITERATIONS,
                     // note that this topic only has 1 partition to collect final feature vectors
                     MOVIE_FEATURES_TOPIC + "-" + NUM_ALS_ITERATIONS,
                     Serdes.Integer().serializer(),

@@ -38,14 +38,14 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         // TODO: optimize wait time?
         this.context.schedule(Duration.ofSeconds(1), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             // if there are no final feature vectors yet, just skip
-            // SMALL
+            // TINY
 //            if (this.mFeaturesMap.size() == 426 && this.uFeaturesMap.size() == 302 && !this.hasPredictionMatrixBeenComputed) {
-            // BIGGER
+            // SMALL
 //            if (this.mFeaturesMap.size() == 2062 && this.uFeaturesMap.size() == 1034 && !this.hasPredictionMatrixBeenComputed) {
-            // BIGGEST
-//            if (this.mFeaturesMap.size() == 3590 && this.uFeaturesMap.size() == 2120 && !this.hasPredictionMatrixBeenComputed) {
+            // MEDIUM
+            if (this.mFeaturesMap.size() == 3590 && this.uFeaturesMap.size() == 2120 && !this.hasPredictionMatrixBeenComputed) {
             // ALL
-            if (this.mFeaturesMap.size() == 17770 && this.uFeaturesMap.size() == 480189 && !this.hasPredictionMatrixBeenComputed) {
+//            if (this.mFeaturesMap.size() == 17770 && this.uFeaturesMap.size() == 480189 && !this.hasPredictionMatrixBeenComputed) {
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {
@@ -68,10 +68,8 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     @Override
     public void process(final Integer partition, final FeatureMessage msg) {
         if (this.context.topic().equals("movie-features-" + ALSApp.NUM_ALS_ITERATIONS)) {
-//            System.out.println("movie " + msg.id);
             this.mFeaturesMap.put(msg.id, msg.features);
         } else if (this.context.topic().equals("user-features-" + ALSApp.NUM_ALS_ITERATIONS)) {
-//            System.out.println("user " + msg.id);
             this.uFeaturesMap.put(msg.id, msg.features);
         }
     }
@@ -80,9 +78,7 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         float[][] mFeaturesMatrixArray = new float[this.mFeaturesMap.size()][ALSApp.NUM_FEATURES];
         int i = 0;
         for (float[] mFeatures : this.mFeaturesMap.values()) {
-            for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                mFeaturesMatrixArray[i][j] = mFeatures[j];
-            }
+            System.arraycopy(mFeatures, 0, mFeaturesMatrixArray[i], 0, ALSApp.NUM_FEATURES);
             i++;
         }
         this.mFeaturesMatrix = new FMatrixRMaj(mFeaturesMatrixArray);
@@ -90,9 +86,7 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         float[][] uFeaturesMatrixArray = new float[this.uFeaturesMap.size()][ALSApp.NUM_FEATURES];
         i = 0;
         for (float[] uFeatures : this.uFeaturesMap.values()) {
-            for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                uFeaturesMatrixArray[i][j] = uFeatures[j];
-            }
+            System.arraycopy(uFeatures, 0, uFeaturesMatrixArray[i], 0, ALSApp.NUM_FEATURES);
             i++;
         }
         this.uFeaturesMatrix = new FMatrixRMaj(uFeaturesMatrixArray);
@@ -105,10 +99,6 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         System.out.println(String.format("Done at %s", new Timestamp(System.currentTimeMillis())));
 //        System.out.println("result");
 //        System.out.println(predictionMatrix);
-
-        // save as CSV
-
-        return;
     }
 
     @Override

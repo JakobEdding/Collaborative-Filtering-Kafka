@@ -26,22 +26,11 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.mInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.M_INBLOCKS_RATINGS_STORE);
         this.mOutBlocksStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.M_OUTBLOCKS_STORE);
         this.movieIdAgg = new HashSet<>();
-
-//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
-//            this.context.commit();
-//        });
     }
 
     @Override
     public void process(final Integer movieId, final IdRatingPairMessage userIdRatingPairMsg) {
         if (userIdRatingPairMsg.id == -1) {
-//            System.out.println(String.format(
-//                    "Got EOF on MRatings2BlocksProcessor for partition %d at %s with this many movies: %d; mInBlocksUidStore approx num entries: %d",
-//                    context.partition(),
-//                    new Timestamp(System.currentTimeMillis()),
-//                    this.movieIdAgg.size(),
-//                    this.mInBlocksUidStore.approximateNumEntries()
-//            ));
             System.out.println(String.format(
                     "Got EOF on MRatings2BlocksProcessor for partition %d at %s with this many movies: %d",
                     context.partition(),
@@ -54,9 +43,7 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
             this.context.commit();
             return;
         }
-//        System.out.println(String.format("MRatings2BlocksProcessor - processing key: %d value: %s", movieId, ratingsForOneMovie));
         this.movieIdAgg.add(movieId);
-
 
         int userId = userIdRatingPairMsg.id;
         short rating = userIdRatingPairMsg.rating;
@@ -82,9 +69,6 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.mOutBlocksStore.put(movieId, partitions);
 
         this.context.forward(userId, new IdRatingPairMessage(movieId, rating));
-
-        // TODO: commit periodically rather than after every record for better performance?
-//        this.context.commit();
     }
 
     @Override
