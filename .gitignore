@@ -2,4 +2,5 @@
 .gradle
 build
 .DS_Store
-data
+data/large
+data/spark
