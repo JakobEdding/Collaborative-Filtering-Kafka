@@ -14,8 +14,7 @@ class ALSAppRunner {
 
 //        String pathToTestDataFile = new File("./data/data_sample_tiny.txt").getAbsolutePath();
 //        String pathToTestDataFile = new File("./data/data_sample_small.txt").getAbsolutePath();
-//        String pathToTestDataFile = new File("./data/data_sample_medium.txt").getAbsolutePath();
-        String pathToTestDataFile = new File("./data/data_part_1.txt").getAbsolutePath();
+        String pathToTestDataFile = new File("./data/data_sample_medium.txt").getAbsolutePath();
         NetflixDataFormatProducer producer = new NetflixDataFormatProducer(pathToTestDataFile);
 
         try {
