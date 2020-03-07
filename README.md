@@ -40,21 +40,21 @@ Movie2 | 2.2 | 1.2
 Movie3 | 1.0 | 3.4
 Movie4 | 2.6 | 3.2
 
-And would be multiplied like this to get the final prediction table:
+These matrices would be multiplied to get the final prediction table:
 
 FinalPredictionMatrix = UserFeatureMatrix * MovieFeatureMatrix<sup>T</sup>
 
 To calculate these two feature tables, ALS needs an error function.
 We are using a very similar function as the one described in the paper.
-We calculate the RMSE between all cells that contain ratings of the original ratings matrix and the corresponding cells of the prediction matrix.
+We calculate the RMSE between all cells that contain ratings in the original ratings matrix and the corresponding cells of the prediction matrix.
 As we are using low rank approximations, it is very unlikely that ALS will correctly "predict" the original ratings.
 The paper then normalizes the RMSE with a parameter lambda and, depending on the cell, with the number of ratings of the corresponding user and movie.
 In our approach, we also normalize with lambda, but depending on the step we are in (see below), we only have access to the number of ratings of the user or the movie respectively.
 We use this number to normalize in addition to lambda.
 
 ### Algorithm
-We describe the steps of the algorithm schematically
-For the detailed mathematical explanation, we refer to the paper above.
+We describe the steps of the algorithm schematically.
+For the detailed mathematical explanation we refer to the paper above.
 
 #### 0. Initialize UserFeatureMatrix
 Initialize the UserFeatureMatrix with small random values in (0,1).
@@ -67,7 +67,7 @@ Now we fix the MovieFeatureMatrix and calculate the UserFeatureMatrix from the e
 
 #### 3. Repeat Step 1 and 2
 Experiments have shown (see paper below) that even for the largest datasets this algorithm converges in 5 - 20 repetitions of these two steps.
-We also set a number of iterations in the beginning and repeat accordingly.
+We set a number of iterations in the beginning and repeat accordingly.
 
 #### 4. Calculate Predicitions
 In the end, we need to calculate the FinalPredictionMatrix by multiplying the two feature matrices.
@@ -88,6 +88,13 @@ In addition to greatly optimizing the memory consumption, the main takeaway is t
 // TODO
 
 ### Architecture in kafka
+
+// TODO
+
+### Benchmarks / Struggles
+
+// TODO talk about biggest dataset, dropped messages
+// mention problems we overcame?
 
 ## Usage
 
