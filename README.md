@@ -93,8 +93,9 @@ In addition to greatly optimizing the memory consumption, the main takeaway is t
 
 ### Benchmarks / Struggles
 
-// TODO talk about biggest dataset, dropped messages
-// mention problems we overcame?
+// TODO talk about biggest dataset, dropped messages\
+// mention problems we overcame?\
+// spark able to do way larger
 
 ## Usage
 
@@ -106,4 +107,12 @@ Wait for the broker, zookeeper and control center to be up and running. You can 
 
 Run `./setup.sh NUM_PARTITIONS NUM_ITERATIONS` (e.g. `./setup.sh 4 10`) to (re)create necessary topics that are not auto-created.
 
-Run `./gradlew run --args='NUM_PARTITIONS NUM_FEATURES LAMBDA NUM_ITERATIONS'`, e.g. `./gradlew run --args='4 10 0.05 10'`.
+Run `./gradlew run --args='NUM_PARTITIONS NUM_FEATURES LAMBDA NUM_ITERATIONS PATH_TO_DATASET NUM_MOVIES NUM_USERS'`, e.g. `./gradlew run --args='4 10 0.05 10 ./data/data_sample_tiny.txt 426 302'`.
+
+The options for the three supplied datasets (taken from the netflix prize challenge) are:
+
+Dataset path | NUM_MOVIES | NUM_USERS
+--- | ---: | ---:
+./data/data_sample_tiny.txt | 426 | 302
+./data/data_sample_small.txt | 2062 | 1034
+./data/data_sample_medium.txt | 3590 | 2120

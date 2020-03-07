@@ -38,14 +38,7 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         // TODO: optimize wait time?
         this.context.schedule(Duration.ofSeconds(1), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             // if there are no final feature vectors yet, just skip
-            // TINY
-//            if (this.mFeaturesMap.size() == 426 && this.uFeaturesMap.size() == 302 && !this.hasPredictionMatrixBeenComputed) {
-            // SMALL
-//            if (this.mFeaturesMap.size() == 2062 && this.uFeaturesMap.size() == 1034 && !this.hasPredictionMatrixBeenComputed) {
-            // MEDIUM
-            if (this.mFeaturesMap.size() == 3590 && this.uFeaturesMap.size() == 2120 && !this.hasPredictionMatrixBeenComputed) {
-            // ALL
-//            if (this.mFeaturesMap.size() == 17770 && this.uFeaturesMap.size() == 480189 && !this.hasPredictionMatrixBeenComputed) {
+            if (this.mFeaturesMap.size() == ALSApp.NUM_MOVIES && this.uFeaturesMap.size() == ALSApp.NUM_USERS && !this.hasPredictionMatrixBeenComputed) {
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {

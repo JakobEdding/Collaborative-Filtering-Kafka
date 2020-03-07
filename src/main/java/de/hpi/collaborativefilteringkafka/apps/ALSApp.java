@@ -14,10 +14,12 @@ import java.util.ArrayList;
 import java.util.Properties;
 
 public class ALSApp extends BaseKafkaApp {
-    public static int NUM_PARTITIONS = 4;
-    public static int NUM_FEATURES = 5;
-    public static float ALS_LAMBDA = 0.05f;
-    public static int NUM_ALS_ITERATIONS = 7;
+    public static int NUM_PARTITIONS;
+    public static int NUM_FEATURES;
+    public static float ALS_LAMBDA;
+    public static int NUM_ALS_ITERATIONS;
+    public static int NUM_MOVIES;
+    public static int NUM_USERS;
 
     public final static String MOVIEIDS_WITH_RATINGS_TOPIC = "movieIds-with-ratings";
     public final static String USERIDS_TO_MOVIEIDS_RATINGS_TOPIC = "userIds-to-movieIds-ratings";
@@ -36,11 +38,13 @@ public class ALSApp extends BaseKafkaApp {
     public final static String MOVIE_FEATURES_SINK = "movie-features-sink-";
     public final static String USER_FEATURES_SINK = "user-features-sink-";
 
-    public ALSApp(int num_partitions, int num_features, float als_lambda, int num_als_iterations) {
+    public ALSApp(int num_partitions, int num_features, float als_lambda, int num_als_iterations, int num_movies, int num_users) {
         NUM_PARTITIONS = num_partitions;
         NUM_FEATURES = num_features;
         ALS_LAMBDA = als_lambda;
         NUM_ALS_ITERATIONS = num_als_iterations;
+        NUM_MOVIES = num_movies;
+        NUM_USERS = num_users;
     }
 
 
