@@ -8,7 +8,11 @@ import java.sql.Timestamp;
 
 class ALSAppRunner {
     public static void main(String[] args) {
-        ALSApp alsApp = new ALSApp();
+        if (args.length < 4) {
+            System.out.println("Arguments missing.");
+            return;
+        }
+        ALSApp alsApp = new ALSApp(Integer.parseInt(args[0]), Integer.parseInt(args[1]), Float.parseFloat(args[2]), Integer.parseInt(args[3]));
 
         System.out.println(String.format("Start at %s", new Timestamp(System.currentTimeMillis())));
 

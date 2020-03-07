@@ -104,6 +104,6 @@ To start the confluence kafka docker image execute the following:
 
 Wait for the broker, zookeeper and control center to be up and running. You can find the Control center at [http://0.0.0.0:9021/](http://0.0.0.0:9021/).
 
-Run `./setup.sh` to (re)create necessary topics that are not auto-created.
+Run `./setup.sh NUM_PARTITIONS NUM_ITERATIONS` (e.g. `./setup.sh 4 10`) to (re)create necessary topics that are not auto-created.
 
-Run ALSAppRunner.main() from your IDE or execute `./gradlew run`.
+Run `./gradlew run --args='NUM_PARTITIONS NUM_FEATURES LAMBDA NUM_ITERATIONS'`, e.g. `./gradlew run --args='4 10 0.05 10'`.
