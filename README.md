@@ -8,7 +8,7 @@ The problem can be imagined as a giant matrix where the users are the rows and t
 Some cells contain the existing ratings, but the majority are empty (the matrix is very sparse in practice) and we want to fill these empty cells to make predictions.
 
 RatingsMatrix | Movie1 | Movie2 | Movie1 | Movie2
---- | --- | --- | --- | ---
+--- | ---: | ---: | ---: | ---:
 User1 | null | 1 | null | 5
 User2 | 2 | 3 | null | null
 User3 | null | null | null | 4
@@ -27,14 +27,14 @@ It finds two low rank matrices (to save storage and computing power) whose multi
 These two matrices could look like this (values aren't correct in this example):
 
 UserFeatureMatrix | Feature1 | Feature2
---- | --- | ---
+--- | ---: | ---:
 User1 | 1.3 | 1.5
 User2 | 2.0 | 3.2
 User3 | 1.5 | 0.4
 User4 | 2.4 | 4.2
 
 MovieFeatureMatrix | Feature1 | Feature2
---- | --- | ---
+--- | ---: | ---:
 Movie1 | 2.3 | 4.5
 Movie2 | 2.2 | 1.2
 Movie3 | 1.0 | 3.4
