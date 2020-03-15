@@ -1,11 +1,13 @@
-# Collaborative Filtering in kafka
+# Collaborative Filtering with Alternating Least Squares in Kafka
 
 Collaborative filtering is a technique in which feedback from users for items (movies, songs, clothing ...) is used to predict how others users would rate these items.
 This plays a major role for many companies that deal with huge user / item datasets and want to make predictions / recommendations for these users, e.g. Netflix, Spotify or Amazon.
 We focus on explicit feedback, which means explicit ratings from users instead of implicit measurements like "time spent viewing item x" or mouse movements.
-We use movies as an example for items throughout out project.
-The problem can be imagined as a giant matrix where the users are the rows and the items are the columns.
+We use movies as an example for items throughout our project.
+The problem can be imagined as a giant matrix where the users are represented by the rows and the items are represented by the columns.
 Some cells contain the existing ratings, but the majority are empty (the matrix is very sparse in practice) and we want to fill these empty cells to make predictions.
+
+We do not really streamify it too much...
 
 RatingsMatrix | Movie1 | Movie2 | Movie1 | Movie2
 --- | ---: | ---: | ---: | ---:
@@ -16,10 +18,10 @@ User4 | 2 | null | 3 | null
 
 
 ## Alternating Least Squares
-The algorithm we implemented is called Alternating Least Squares.
+The algorithm we implemented is called Alternating Least Squares (ALS).
 Netflix once started a challenge for improving it's prediction system.
 The winning solution used different approaches, but ALS was one of them.
-A detailed explanation can be found in the original paper:
+A detailed explanation can be found in the original paper: (shorten reference here)
 > Zhou, Y., Wilkinson, D., Schreiber, R., & Pan, R. (2008, June). Large-scale parallel collaborative filtering for the netflix prize. In International conference on algorithmic applications in management (pp. 337-348). Springer, Berlin, Heidelberg.
 
 ALS tackles the problem of Collaborative Filtering by using matrix factorization.
@@ -75,9 +77,24 @@ This yields an approximation of the original RatingsMatrix with predictions for 
 
 ### Distributing ALS
 
-// TODO
+As discussed in the section on ALS, the features of a single user/movie can be updated using a closed form solution.
+Therefore, this part can be intuitively parallelized and so we focus on reducing the communication cost.
+To be able to update a user's feature vector, the following data is required: a) the **ratings the user has given** to movies and b) a **movie feature sub-matrix** for the movies the user has rated.
+To be more precise, this is a sub-matrix of the matrix that all movie feature vectors make up together.
+The **ratings the user has given** are constant throughout the ALS process and can therefore be stored on a single node for the whole execution of the algorithm.
+Therefore, it does not have to be transferred between nodes during ALS iterations.
+The values of the **movie feature sub-matrix** change during execution of the algorithm towards a best-possible low-rank approximation of the original matrix.
+However, the structure of this sub-matrix stays the same because the movies a user has rated stay the same during runtime.
+We can use this fact to our advantage for distributing ALS.
+
+In more detail, we create an __InBlock__ and an __OutBlock__ for every feature vector User1, User2, ..., UserN and Movie1, Movie2, ..., MovieN that we compute.
+Looking at __InBlocks__ and __OutBlocks__ from the angle of a feature vector computation for a user feature vector,
+each __InBlock__ stores the ratings the user has given to movies and the IDs of these movies which allows us to access these movies' feature vectors.
+Each __OutBlock__ stores the IDs of movie feature vectors that depend on the currently computed user feature vector. In the case of the block-to-block join, an __OutBlock__ of a user feature vector is used to send the feature vector once per partition that contains dependent movie feature vector computations. However in the case of the more naive all-to-all join, the __OutBlock__ is not used and a user feature vectors is sent once per depending movie feature vector, even if multiple movie feature vector computations would be carried out on the same partition.
+Both __InBlocks__ and __OutBlocks__ are distributed across the partitions.
 
 ### Implementation in Spark
+
 One version of this algorithm is implemented in the Spark MLLib and makes some additional important optimizations for distributed calculation of ALS, as the data often is very large.
 The current implementation is described n detail in this paper:
 > Das, A., Upadhyaya, I., Meng, X., & Talwalkar, A. (2017, November). Collaborative Filtering as a Case-Study for Model Parallelism on Bulk Synchronous Systems. In Proceedings of the 2017 ACM on Conference on Information and Knowledge Management (pp. 969-977).
@@ -87,11 +104,37 @@ In addition to greatly optimizing the memory consumption, the main takeaway is t
 
 // TODO
 
-### Architecture in kafka
+### Architecture and Dataflow in Kafka
 
-// TODO
+![inblock-outblock-creation.png](./readme-images/inblock-outblock-creation.png)
+
+![eof-trigger-als.png](./readme-images/eof-trigger-als.png)
+
+![als-circular-topology.png](./readme-images/als-circular-topology.png)
+
+![als-pseudo-circular-topology.png](./readme-images/als-pseudo-circular-topology.png)
+
 
 ### Benchmarks / Struggles
+
+Introduce datasets we used for evaluation (also usage or do that exclusively below?)
+
+For evaluating our prototype, we focused on measuring the execution time on sample datasets of different sizes from the Netflix dataset. We do not compare
+
+Compare all-to-all, block-to-block and block-to-block implementation in Spark's MLLib
+
+![evaluation.png](./readme-images/evaluation.png)
+
+hohe spark zeiten mit spark startup erklären
+
+methodik: durchschnitt aus 10 durchläufen
+5 features, 7 iterations, lambda=0,05
+
+spark times include time for startup
+
+The block-to-block join ALS implementation causes some overhead which results in higher execution times for extremely small datasets but has a positive effect on the execution time of big datasets.
+
+The measured execution time for our ALS implementations (both block-to-block join and all-to-all join) includes the time it takes the producer to split the input matrix into records and sending them to the Kafka broker.
 
 // TODO talk about biggest dataset, dropped messages\
 // mention problems we overcame?\
@@ -116,3 +159,5 @@ Dataset path | NUM_MOVIES | NUM_USERS
 ./data/data_sample_tiny.txt | 426 | 302
 ./data/data_sample_small.txt | 2062 | 1034
 ./data/data_sample_medium.txt | 3590 | 2120
+
+## References
