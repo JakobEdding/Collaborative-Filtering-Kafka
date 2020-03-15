@@ -26,9 +26,24 @@ services:
       - "9092:9092"
       - "29092:29092"
     env_file:
-      - env/kafka.env
+      - env/kafka-1.env
     volumes:
       - kafka-1-data:/var/lib/kafka/data/
+
+  kafka-2:
+    image: confluentinc/cp-enterprise-kafka:latest
+    hostname: kafka-2
+    container_name: kafka-2
+    stop_grace_period: 5m
+    depends_on:
+      - zookeeper-1
+    ports:
+      - "9093:9092"
+      - "29093:29092"
+    env_file:
+      - env/kafka-2.env
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data/
 
   control-center:
     image: confluentinc/cp-enterprise-control-center:5.3.1
@@ -37,13 +52,14 @@ services:
     depends_on:
       - zookeeper-1
       - kafka-1
+      - kafka-2
     ports:
       - "9021:9021"
       - "9022:9022"
     volumes:
       - ./scripts/security:/etc/kafka/secrets
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: "kafka-1:9092"
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: "kafka-1:9092,kafka-2:9092"
       CONTROL_CENTER_ZOOKEEPER_CONNECT: "zookeeper-1:2181"
       CONTROL_CENTER_REPLICATION_FACTOR: 1
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_REPLICATION: 1
@@ -77,3 +93,4 @@ volumes:
   zookeeper-1-data:
   zookeeper-1-log:
   kafka-1-data:
+  kafka-2-data:

@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 public class NetflixDataFormatProducer {
     private Producer<Integer, IdRatingPairMessage> producer;
@@ -24,7 +23,7 @@ public class NetflixDataFormatProducer {
         this.topicName = ALSApp.MOVIEIDS_WITH_RATINGS_TOPIC;
 
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092,localhost:29093");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "netflix-data-producer-" + UUID.randomUUID().toString());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IdRatingPairMessageSerializer.class.getName());

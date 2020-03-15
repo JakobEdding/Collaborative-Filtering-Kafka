@@ -16,7 +16,7 @@ public abstract class BaseKafkaApp implements Callable<Void> {
 
     private String host = "localhost";
     private int port = 8070;
-    public final static String brokers = "localhost:29092";
+    public final static String brokers = "localhost:29092,localhost:29093";
 
     @Override
     public Void call() throws Exception {
