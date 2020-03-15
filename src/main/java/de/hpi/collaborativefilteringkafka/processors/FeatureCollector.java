@@ -5,9 +5,12 @@ import de.hpi.collaborativefilteringkafka.messages.FeatureMessage;
 import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
+import org.ejml.data.DMatrixRMaj;
 import org.ejml.data.FMatrixRMaj;
 import org.ejml.dense.row.CommonOps_FDRM;
+import org.ejml.ops.MatrixIO;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.TreeMap;
@@ -86,12 +89,25 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     }
 
     private void calculatePredictionMatrix() {
-        FMatrixRMaj predictionMatrix = new FMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
-        CommonOps_FDRM.multTransB(this.uFeaturesMatrix, this.mFeaturesMatrix, predictionMatrix);
+        FMatrixRMaj fPredictionMatrix = new FMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
+        CommonOps_FDRM.multTransB(this.uFeaturesMatrix, this.mFeaturesMatrix, fPredictionMatrix);
 
         System.out.println(String.format("Done at %s", new Timestamp(System.currentTimeMillis())));
-//        System.out.println("result");
-//        System.out.println(predictionMatrix);
+
+        DMatrixRMaj dPredictionMatrix = new DMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
+        for(int i = 0; i < this.uFeaturesMap.size(); i++) {
+            for(int j = 0; j < this.mFeaturesMap.size(); j++) {
+                dPredictionMatrix.set(i, j, fPredictionMatrix.get(i, j));
+            }
+        }
+        try {
+            MatrixIO.saveDenseCSV(
+                    dPredictionMatrix,
+                    "./predictions/prediction_matrix_" + new Timestamp(System.currentTimeMillis())
+            );
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
