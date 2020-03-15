@@ -42,12 +42,13 @@ Movie2 | 2.2 | 1.2
 Movie3 | 1.0 | 3.4
 Movie4 | 2.6 | 3.2
 
-These matrices would be multiplied to get the final prediction table:
-
-FinalPredictionMatrix = UserFeatureMatrix * MovieFeatureMatrix<sup>T</sup>
+These matrices would be multiplied to get the final prediction table.
 
 To calculate these two feature tables, ALS needs an error function.
-We are using a very similar function as the one described in the paper.
+We are using a very similar function as the one described in the paper:
+
+![RMSE.png](./readme-images/RMSE.png)
+
 We calculate the RMSE between all cells that contain ratings in the original ratings matrix and the corresponding cells of the prediction matrix.
 As we are using low rank approximations, it is very unlikely that ALS will correctly "predict" the original ratings.
 The paper then normalizes the RMSE with a parameter lambda and, depending on the cell, with the number of ratings of the corresponding user and movie.
@@ -59,20 +60,38 @@ We describe the steps of the algorithm schematically.
 For the detailed mathematical explanation we refer to the paper above.
 
 #### 0. Initialize UserFeatureMatrix
-Initialize the UserFeatureMatrix with small random values in (0,1).
+Initialize the UserFeatureMatrix with small random values in (0,1].
+
+UserFeatureMatrix | Feature1 | Feature2
+--- | ---: | ---:
+User1 | 0.3 | 0.5
+User2 | 0.0 | 0.2
+User3 | 0.5 | 0.4
+User4 | 0.4 | 0.2
 
 #### 1. Calculate MovieFeatureMatrix
 Using the error function, we calculate a closed form solution for the MovieFeatureMatrix, because the original RatingsMatrix and the UserFeatureMatrix are fixed at this point.
 
+![user complete.png](./readme-images/user complete.png)
+
+![user matrices.png](./readme-images/user matrices.png)
+
 #### 2. Calculate UserFeatureMatrix
 Now we fix the MovieFeatureMatrix and calculate the UserFeatureMatrix from the error function.
+
+![movie complete.png](./readme-images/movie complete.png)
+
+![movie matrices.png](./readme-images/movie matrices.png)
 
 #### 3. Repeat Step 1 and 2
 Experiments have shown (see paper below) that even for the largest datasets this algorithm converges in 5 - 20 repetitions of these two steps.
 We set a number of iterations in the beginning and repeat accordingly.
 
 #### 4. Calculate Predicitions
-In the end, we need to calculate the FinalPredictionMatrix by multiplying the two feature matrices.
+In the end, we need to calculate the FinalPredictionMatrix by multiplying the two feature matrices:
+
+FinalPredictionMatrix = UserFeatureMatrix * MovieFeatureMatrix<sup>T</sup>
+
 This yields an approximation of the original RatingsMatrix with predictions for the previously empty cells.
 
 ### Distributing ALS
