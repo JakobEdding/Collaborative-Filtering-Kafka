@@ -8,13 +8,23 @@ import java.sql.Timestamp;
 
 class ALSAppRunner {
     public static void main(String[] args) {
-        ALSApp alsApp = new ALSApp();
+        if (args.length < 7) {
+            System.out.println("\u001B[31mARGUMENTS MISSING\u001B[0m");
+            return;
+        }
+
+        ALSApp alsApp = new ALSApp(
+                Integer.parseInt(args[0]),
+                Integer.parseInt(args[1]),
+                Float.parseFloat(args[2]),
+                Integer.parseInt(args[3]),
+                Integer.parseInt(args[5]),
+                Integer.parseInt(args[6])
+        );
 
         System.out.println(String.format("Start at %s", new Timestamp(System.currentTimeMillis())));
 
-//        String pathToTestDataFile = new File("./testdata/movie_ratings_very_small").getAbsolutePath();
-//        String pathToTestDataFile = new File("/Users/hendriknilsaurel/Downloads/combined_data_1_kafka.txt").getAbsolutePath();
-        String pathToTestDataFile = new File("/Users/j/Documents/Uni/MLDS/.datasets.nosync/netflix-prize-data-small/combined_data_1.txt").getAbsolutePath();
+        String pathToTestDataFile = new File(args[4]).getAbsolutePath();
         NetflixDataFormatProducer producer = new NetflixDataFormatProducer(pathToTestDataFile);
 
         try {

@@ -19,7 +19,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
     private ProcessorContext context;
     private KeyValueStore<Integer, ArrayList<Integer>> uInBlocksMidStore;
     private KeyValueStore<Integer, ArrayList<Short>> uInBlocksRatingsStore;
-    private HashMap<Integer, HashMap<Integer, ArrayList<Float>>> userIdToMovieFeatureVectors;
+    private HashMap<Integer, HashMap<Integer, float[]>> userIdToMovieFeatureVectors;
     private long currentMatrixOpTimeAgg;
     private boolean hasAlreadyPrintedTime;
 
@@ -41,20 +41,14 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
                 this.hasAlreadyPrintedTime = true;
             }
         });
-
-//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
-//            this.context.commit();
-//        });
     }
 
     @Override
     public void process(final Integer userId, final FeatureMessage msg) {
-//        System.out.println(String.format("Received: UFeatureCalculator - partition %d - message: %s", partition, msg.toString()));
-
         long before = System.currentTimeMillis();
 
         int movieIdForFeatures = msg.id;
-        ArrayList<Float> features = msg.features;
+        float[] features = msg.features;
 
         ArrayList<Integer> inBlockMidsForU = this.uInBlocksMidStore.get(userId);
         if(inBlockMidsForU == null) {
@@ -62,7 +56,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             return;
         }
 
-        HashMap<Integer, ArrayList<Float>> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
+        HashMap<Integer, float[]> movieIdToFeature = userIdToMovieFeatureVectors.get(userId);
         if (movieIdToFeature == null) {
             movieIdToFeature = new HashMap<>();
         }
@@ -73,10 +67,7 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             float[][] mFeatures = new float[inBlockMidsForU.size()][ALSApp.NUM_FEATURES];
             int i = 0;
             for (Integer movieId : inBlockMidsForU) {
-                ArrayList<Float> featuresForCurrentMovieId = movieIdToFeature.get(movieId);
-                for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                    mFeatures[i][j] = featuresForCurrentMovieId.get(j);
-                }
+                mFeatures[i] = movieIdToFeature.get(movieId);
                 i++;
             }
             // movie features matrix ordered by movieid (rows) with ALSApp.NUM_FEATURES features (cols)
@@ -107,9 +98,9 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             CommonOps_FDRM.invert(newA);
             CommonOps_FDRM.mult(newA, V, uFeaturesVector);
 
-            ArrayList<Float> uFeaturesVectorFloat = new ArrayList<>(ALSApp.NUM_FEATURES);
+            float[] uFeaturesVectorFloat = new float[ALSApp.NUM_FEATURES];
             for (int l = 0; l < ALSApp.NUM_FEATURES; l++) {
-                uFeaturesVectorFloat.add(uFeaturesVector.get(l, 0));
+                uFeaturesVectorFloat[l] = uFeaturesVector.get(l, 0);
             }
 
             String sourceTopic = this.context.topic();
@@ -120,20 +111,17 @@ public class UFeatureCalculator extends AbstractProcessor<Integer, FeatureMessag
             FeatureMessage featureMsgToBeSent = new FeatureMessage(userId, uFeaturesVectorFloat);
 
             if (sourceTopicIteration == ALSApp.NUM_ALS_ITERATIONS - 1) {
-//                    System.out.println(String.format("finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                 context.forward(
                         0,
                         featureMsgToBeSent,
-                        To.child("user-features-sink-" + sinkTopicIteration)
+                        To.child(ALSApp.USER_FEATURES_SINK + sinkTopicIteration)
                 );
             } else {
-//                    System.out.println(String.format("not finishing: UFeatureCalculator - sending message: %s", featureMsgToBeSent.toString()));
                 for (int dependentMid : dependentMids) {
-                    // TODO: don't hardcode sink name
                     context.forward(
                             dependentMid,
-                            new FeatureMessage(userId, uFeaturesVectorFloat),
-                            To.child("user-features-sink-" + sinkTopicIteration)
+                            featureMsgToBeSent,
+                            To.child(ALSApp.USER_FEATURES_SINK + sinkTopicIteration)
                     );
                 }
             }

@@ -6,13 +6,16 @@ import org.apache.kafka.streams.processor.AbstractProcessor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 
 public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatingPairMessage> {
     private ProcessorContext context;
     private KeyValueStore<Integer, ArrayList<Integer>> mInBlocksUidStore;
     private KeyValueStore<Integer, ArrayList<Short>> mInBlocksRatingsStore;
+    private HashSet<Integer> movieIdAgg;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -20,20 +23,25 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.context = context;
         this.mInBlocksUidStore = (KeyValueStore<Integer, ArrayList<Integer>>) this.context.getStateStore(ALSApp.M_INBLOCKS_UID_STORE);
         this.mInBlocksRatingsStore = (KeyValueStore<Integer, ArrayList<Short>>) this.context.getStateStore(ALSApp.M_INBLOCKS_RATINGS_STORE);
-
-//        this.context.schedule(Duration.ofSeconds(2), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
-//            this.context.commit();
-//        });
+        this.movieIdAgg = new HashSet<>();
     }
 
     @Override
     public void process(final Integer movieId, final IdRatingPairMessage userIdRatingPairMsg) {
         if (userIdRatingPairMsg.id == -1) {
-            this.context.forward(movieId, userIdRatingPairMsg);
+            System.out.println(String.format(
+                    "Got EOF on MRatings2BlocksProcessor for partition %d at %s with this many movies: %d",
+                    context.partition(),
+                    new Timestamp(System.currentTimeMillis()),
+                    this.movieIdAgg.size()
+            ));
+            for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
+                this.context.forward(partition, new IdRatingPairMessage(-1, (short) context.partition()));
+            }
             this.context.commit();
             return;
         }
-//        System.out.println(String.format("MRatings2BlocksProcessor - processing key: %d value: %s", movieId, ratingsForOneMovie));
+        this.movieIdAgg.add(movieId);
 
         int userId = userIdRatingPairMsg.id;
         short rating = userIdRatingPairMsg.rating;
@@ -53,9 +61,6 @@ public class MRatings2BlocksProcessor extends AbstractProcessor<Integer, IdRatin
         this.mInBlocksRatingsStore.put(movieId, ratings);
 
         this.context.forward(userId, new IdRatingPairMessage(movieId, rating));
-
-        // TODO: commit periodically rather than after every record for better performance?
-//        this.context.commit();
     }
 
     @Override

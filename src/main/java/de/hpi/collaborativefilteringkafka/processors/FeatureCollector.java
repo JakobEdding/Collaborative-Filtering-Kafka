@@ -13,15 +13,14 @@ import org.ejml.ops.MatrixIO;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Duration;
-import java.util.ArrayList;
+
 import java.util.TreeMap;
 
 public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage> {
     private ProcessorContext context;
 
-    // TODO: use TreeMap instead to avoid race conditions? can we be sure of the order of the feature vectors?
-    private TreeMap<Integer, ArrayList<Float>> mFeaturesMap;
-    private TreeMap<Integer, ArrayList<Float>> uFeaturesMap;
+    private TreeMap<Integer, float[]> mFeaturesMap;
+    private TreeMap<Integer, float[]> uFeaturesMap;
     private int mostRecentMFeaturesMapSize;
     private int mostRecentUFeaturesMapSize;
     private boolean hasPredictionMatrixBeenComputed;
@@ -43,7 +42,7 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         // TODO: optimize wait time?
         this.context.schedule(Duration.ofSeconds(1), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             // if there are no final feature vectors yet, just skip
-            if (this.mFeaturesMap.size() == 426 && this.uFeaturesMap.size() == 302 && !this.hasPredictionMatrixBeenComputed) {
+            if (this.mFeaturesMap.size() == ALSApp.NUM_MOVIES && this.uFeaturesMap.size() == ALSApp.NUM_USERS && !this.hasPredictionMatrixBeenComputed) {
                 // check whether no new final feature vectors have been added in the mean time
                 if (this.mFeaturesMap.size() == this.mostRecentMFeaturesMapSize
                     && this.uFeaturesMap.size() == this.mostRecentUFeaturesMapSize) {
@@ -57,7 +56,7 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
                 }
             }
         });
-        
+
         this.context.schedule(Duration.ofSeconds(5), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             System.out.println(String.format("Matrix is %d x %d", this.mFeaturesMap.size(), this.uFeaturesMap.size()));
         });
@@ -75,45 +74,41 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
     private void constructFeatureMatrices() {
         float[][] mFeaturesMatrixArray = new float[this.mFeaturesMap.size()][ALSApp.NUM_FEATURES];
         int i = 0;
-        for (ArrayList<Float> mFeatures : this.mFeaturesMap.values()) {
-            for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                mFeaturesMatrixArray[i][j] = mFeatures.get(j);
-            }
+        for (float[] mFeatures : this.mFeaturesMap.values()) {
+            System.arraycopy(mFeatures, 0, mFeaturesMatrixArray[i], 0, ALSApp.NUM_FEATURES);
             i++;
         }
         this.mFeaturesMatrix = new FMatrixRMaj(mFeaturesMatrixArray);
 
         float[][] uFeaturesMatrixArray = new float[this.uFeaturesMap.size()][ALSApp.NUM_FEATURES];
         i = 0;
-        for (ArrayList<Float> uFeatures : this.uFeaturesMap.values()) {
-            for (int j = 0; j < ALSApp.NUM_FEATURES; j++) {
-                uFeaturesMatrixArray[i][j] = uFeatures.get(j);
-            }
+        for (float[] uFeatures : this.uFeaturesMap.values()) {
+            System.arraycopy(uFeatures, 0, uFeaturesMatrixArray[i], 0, ALSApp.NUM_FEATURES);
             i++;
         }
         this.uFeaturesMatrix = new FMatrixRMaj(uFeaturesMatrixArray);
     }
 
     private void calculatePredictionMatrix() {
-        FMatrixRMaj predictionMatrix = new FMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
-        CommonOps_FDRM.multTransB(this.uFeaturesMatrix, this.mFeaturesMatrix, predictionMatrix);
-
-//        System.out.println(predictionMatrix);
-
-        DMatrixRMaj predictionMatrixDouble = new DMatrixRMaj(predictionMatrix.numRows, predictionMatrix.numCols);
-        for (int i = 0; i < predictionMatrix.numRows; i++) {
-            for (int j = 0; j < predictionMatrix.numCols; j++) {
-                predictionMatrixDouble.set(i, j, predictionMatrix.get(i, j));
-            }
-        }
-
-        try {
-            MatrixIO.saveDenseCSV(predictionMatrixDouble, String.format("/Users/j/Documents/Uni/MLDS/.datasets.nosync/predictions/predictions_matrix_%s.csv", new Timestamp(System.currentTimeMillis())));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        FMatrixRMaj fPredictionMatrix = new FMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
+        CommonOps_FDRM.multTransB(this.uFeaturesMatrix, this.mFeaturesMatrix, fPredictionMatrix);
 
         System.out.println(String.format("Done at %s", new Timestamp(System.currentTimeMillis())));
+
+        DMatrixRMaj dPredictionMatrix = new DMatrixRMaj(this.uFeaturesMap.size(), this.mFeaturesMap.size());
+        for(int i = 0; i < this.uFeaturesMap.size(); i++) {
+            for(int j = 0; j < this.mFeaturesMap.size(); j++) {
+                dPredictionMatrix.set(i, j, fPredictionMatrix.get(i, j));
+            }
+        }
+        try {
+            MatrixIO.saveDenseCSV(
+                    dPredictionMatrix,
+                    "./predictions/prediction_matrix_" + new Timestamp(System.currentTimeMillis())
+            );
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
