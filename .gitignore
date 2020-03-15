@@ -2,3 +2,6 @@
 .gradle
 build
 .DS_Store
+data/large
+data/spark
+predictions/**

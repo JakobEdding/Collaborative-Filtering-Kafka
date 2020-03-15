@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.IntegerSerializer;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +17,6 @@ import java.util.concurrent.ExecutionException;
 public class NetflixDataFormatProducer {
     private Producer<Integer, IdRatingPairMessage> producer;
     private String dataFilePath;
-    // TODO: get this from 1st processor?
     private String topicName;
 
     public NetflixDataFormatProducer(String dataFilePath) {
@@ -29,22 +29,14 @@ public class NetflixDataFormatProducer {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IdRatingPairMessageSerializer.class.getName());
         props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, PureModPartitioner.class.getName());
+        props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, Long.MAX_VALUE);
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 300000);
 
         this.producer = new KafkaProducer<>(props);
     }
 
-    private void sendAndLog(ProducerRecord<Integer, IdRatingPairMessage> record) {
-        try {
-            RecordMetadata metadata = this.producer.send(record).get();
-//            System.out.println("Record sent to partition " + metadata.partition()
-//                    + " with offset " + metadata.offset());
-        } catch (ExecutionException | InterruptedException e) {
-            System.out.println("Error in sending record");
-            System.out.println(e);
-        }
-    }
-
     public void runProducer() throws IOException {
+        System.out.println(String.format("Producer starts running at %s", new Timestamp(System.currentTimeMillis())));
         BufferedReader dataFileReader = new BufferedReader(new FileReader(this.dataFilePath));
         String row;
         int currentMovieId = -1;
@@ -56,7 +48,14 @@ public class NetflixDataFormatProducer {
                 String[] split = row.split(",");
                 ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(
                         this.topicName, currentMovieId, new IdRatingPairMessage(Integer.parseInt(split[0]), Short.parseShort(split[1])));
-                this.sendAndLog(record);
+//                this.sendAndLog(record);
+                this.producer.send(record, new Callback() {
+                    public void onCompletion(RecordMetadata metadata, Exception ex) {
+                        if (ex != null) {
+                            System.out.println(String.format("Failed to produce record. Got Exception: %s", ex));
+                        }
+                    }
+                });
             }
         }
 
@@ -65,7 +64,13 @@ public class NetflixDataFormatProducer {
         // send EOF to signal that producer is done
         for(int partition = 0; partition < ALSApp.NUM_PARTITIONS; partition++) {
             ProducerRecord<Integer, IdRatingPairMessage> record = new ProducerRecord<>(this.topicName, partition, new IdRatingPairMessage(-1, (short) -1));
-            this.sendAndLog(record);
+            this.producer.send(record, new Callback() {
+                public void onCompletion(RecordMetadata metadata, Exception ex) {
+                    if (ex != null) {
+                        System.out.println(String.format("Failed to produce record. Got Exception: %s", ex));
+                    }
+                }
+            });
         }
     }
 }
