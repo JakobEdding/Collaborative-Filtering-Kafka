@@ -53,7 +53,7 @@ We calculate the RMSE between all cells that contain ratings in the original rat
 As we are using low rank approximations, it is very unlikely that ALS will correctly "predict" the original ratings.
 The paper then normalizes the RMSE with a parameter lambda and, depending on the cell, with the number of ratings of the corresponding user and movie.
 In our approach, we also normalize with lambda, but depending on the step we are in (see below), we only have access to the number of ratings of the user or the movie respectively.
-We use this number to normalize in addition to lambda.
+We only use this number to normalize in addition to lambda in contrast to both as shown above.
 
 ### Algorithm
 We describe the steps of the algorithm schematically.
@@ -72,16 +72,16 @@ User4 | 0.4 | 0.2
 #### 1. Calculate MovieFeatureMatrix
 Using the error function, we calculate a closed form solution for the MovieFeatureMatrix, because the original RatingsMatrix and the UserFeatureMatrix are fixed at this point.
 
-![user complete.png](./readme-images/user complete.png)
+![user-complete.png](readme-images/user-complete.png)
 
-![user matrices.png](./readme-images/user matrices.png)
+![user-matrices.png](readme-images/user-matrices.png)
 
 #### 2. Calculate UserFeatureMatrix
 Now we fix the MovieFeatureMatrix and calculate the UserFeatureMatrix from the error function.
 
-![movie complete.png](./readme-images/movie complete.png)
+![movie-complete.png](./readme-images/movie-complete.png)
 
-![movie matrices.png](./readme-images/movie matrices.png)
+![movie-matrices.png](readme-images/movie-matrices.png)
 
 #### 3. Repeat Step 1 and 2
 Experiments have shown (see paper below) that even for the largest datasets this algorithm converges in 5 - 20 repetitions of these two steps.
