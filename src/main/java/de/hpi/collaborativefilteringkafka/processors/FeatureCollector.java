@@ -38,7 +38,6 @@ public class FeatureCollector extends AbstractProcessor<Integer, FeatureMessage>
         this.mostRecentUFeaturesMapSize = this.uFeaturesMap.size();
         this.hasPredictionMatrixBeenComputed = false;
 
-        // TODO: optimize wait time?
         this.context.schedule(Duration.ofSeconds(1), PunctuationType.WALL_CLOCK_TIME, timestamp -> {
             // if there are no final feature vectors yet, just skip
             if (this.mFeaturesMap.size() == ALSApp.NUM_MOVIES && this.uFeaturesMap.size() == ALSApp.NUM_USERS && !this.hasPredictionMatrixBeenComputed) {

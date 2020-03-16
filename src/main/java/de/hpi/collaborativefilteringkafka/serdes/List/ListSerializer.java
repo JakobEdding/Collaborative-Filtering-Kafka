@@ -35,7 +35,6 @@ public class ListSerializer<Inner> implements Serializer<List<Inner>> {
     @SuppressWarnings(value = "unchecked")
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
-        // TODO: comment this out again?
         if (inner == null) {
             final String innerSerdePropertyName = isKey ? "default.list.key.serde.inner" : "default.list.value.serde.inner";
             final Object innerSerde = configs.get(innerSerdePropertyName);
