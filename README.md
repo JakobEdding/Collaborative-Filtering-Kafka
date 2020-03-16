@@ -49,11 +49,11 @@ We are using a very similar function as the one described in the paper:
 
 ![RMSE.png](./readme-images/RMSE.png)
 
-We calculate the RMSE between all cells that contain ratings in the original ratings matrix and the corresponding cells of the prediction matrix.
+We calculate the RMSE between all cells that contain ratings in the original ratings matrix (r<sub>ij</sub>) and the corresponding cells of the prediction matrix (u<sub>i</sub><sup>T</sup>m<sub>j</sub>, where u<sub>i</sub> and m<sub>j</sub> are vectors of the respective feature matrices).
 As we are using low rank approximations, it is very unlikely that ALS will correctly "predict" the original ratings.
-The paper then normalizes the RMSE with a parameter lambda and, depending on the cell, with the number of ratings of the corresponding user and movie.
+The paper then normalizes the RMSE with a parameter lambda and, depending on the cell, with the number of ratings of the corresponding user and movie (n<sub>u<sub>i</sub></sub> and n<sub>m<sub>j</sub></sub>).
 In our approach, we also normalize with lambda, but depending on the step we are in (see below), we only have access to the number of ratings of the user or the movie respectively.
-We only use this number to normalize in addition to lambda in contrast to both as shown above.
+We only use this number to normalize multiplied with lambda in contrast to both as shown above.
 
 ### Algorithm
 We describe the steps of the algorithm schematically.
@@ -70,18 +70,25 @@ User3 | 0.5 | 0.4
 User4 | 0.4 | 0.2
 
 #### 1. Calculate MovieFeatureMatrix
-Using the error function, we calculate a closed form solution for the MovieFeatureMatrix, because the original RatingsMatrix and the UserFeatureMatrix are fixed at this point.
+We fix the UserFeatureMatrix from Step 0 for this step.
+We get a closed form solution for the MovieFeatureMatrix by calculating the partial derivative of the error function for all features for a movie j.
+This leads to the following equation for the features of movie j:
 
-![user-complete.png](readme-images/user-complete.png)
-
-![user-matrices.png](readme-images/user-matrices.png)
-
-#### 2. Calculate UserFeatureMatrix
-Now we fix the MovieFeatureMatrix and calculate the UserFeatureMatrix from the error function.
-
-![movie-complete.png](./readme-images/movie-complete.png)
+![movie-complete.png](readme-images/movie-complete.png)
 
 ![movie-matrices.png](readme-images/movie-matrices.png)
+
+I<sub>j</sub> is the set of all users with ratings for that movie j, so U<sub>I<sub>j</sub></sub> is the matrix of all features of all users with ratings for that movie j.
+R(I<sub>j</sub>,j) is the vector of all preexisting ratings for that movie j.
+
+As we can see, the features being calculated only depend on a small row of the original matrix and a subset of all user features.
+
+#### 2. Calculate UserFeatureMatrix
+Now we fix the MovieFeatureMatrix and calculate the UserFeatureMatrix from the error function, this step is symmetric to step 1.
+
+![user-complete.png](./readme-images/user-complete.png)
+
+![user-matrices.png](readme-images/user-matrices.png)
 
 #### 3. Repeat Step 1 and 2
 Experiments have shown (see paper below) that even for the largest datasets this algorithm converges in 5 - 20 repetitions of these two steps.
